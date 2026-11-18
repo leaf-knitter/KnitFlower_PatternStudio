@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Colorwork Pattern Studio</title>
+<style>
+*{
+    box-sizing:border-box;
+}
+:root{
+    --background:#f4f2ec;
+    --panel:#faf9f5;
+    --border:#d8d4cb;
+    --text:#252525;
+    --muted:#77736b;
+    --cell-size:34px;
+}
+html,
+body{
+    width:100%;
+    height:100%;
+    margin:0;
+    overflow:hidden;
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--text);
+    background:var(--background);
+}
+header{
+    height:60px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 20px;
+    background:#fbfaf7;
+    border-bottom:1px solid var(--border);
+}
+.logo{
+    font-size:18px;
+    font-weight:700;
+    letter-spacing:-.4px;
+}
+.logo span{
+    color:#888;
+    font-weight:400;
+}
+.header-right{
+    display:flex;
+    gap:8px;
+}
+button{
+    border:1px solid var(--border);
+    background:white;
+    color:var(--text);
+    border-radius:6px;
+    padding:8px 12px;
+    font-size:12px;
+    cursor:pointer;
+}
+button:disabled{opacity:.4;cursor:default;}
+button:hover{
+    background:#efede7;
+}
+button.primary{
+    background:#222;
+    color:white;
+    border-color:#222;
+}
+button.plain-btn{
+    border:none;
+    background:transparent;
+    padding:4px;
+}
+button.plain-btn:hover{
+    background:#e7e3db;
+}
+.main{
+    height:calc(100vh - 60px);
+    display:grid;
+    grid-template-columns:245px minmax(430px,1fr) minmax(430px,1fr);
+}
+.sidebar{
+    background:#faf9f5;
+    border-right:1px solid var(--border);
+    padding:18px;
+    overflow:auto;
+}
+.section{
+    margin-bottom:23px;
+}
+.section-title{
+    font-size:10px;
+    letter-spacing:1.4px;
+    text-transform:uppercase;
+    color:#888;
+    margin-bottom:10px;
+}
+.pattern-name{
+    font-size:16px;
+    font-weight:600;
+    margin-bottom:12px;
+}
+label{
+    display:block;
+    font-size:11px;
+    color:#777;
+    margin-bottom:5px;
+}
+input[type=text],
+input[type=number]{
+    width:100%;
+    border:1px solid var(--border);
+    background:white;
+    border-radius:5px;
+    padding:8px;
+    font-size:12px;
+}
+input[type="color"]{
+    width:100%;
+    height:44px;
+    border:1px solid var(--border);
+    border-radius:5px;
+    cursor:pointer;
+}
+.row{
+    display:flex;
+    gap:7px;
+}
+.row>*{
+    flex:1;
+}
+.tool-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+}
+.tool.active{
+    background:#222;
+    color:white;
+    border-color:#222;
+}
+.colors{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+.color-row{
+    display:grid;
+    grid-template-columns:28px 1fr 28px 28px;
+    gap:4px;
+    align-items:center;
+}
+.color-preview{
+    width:28px;
+    height:28px;
+    border-radius:5px;
+    border:1px solid #aaa;
+}
+.color-row input{
+    width:100%;
+    padding:6px;
+    border:1px solid var(--border);
+    border-radius:5px;
+}
+.small-button{
+    width:28px;
+    height:28px;
+    padding:0;
+}
+.full{
+    width:100%;
+}
+.range{
+    width:100%;
+}
+.chart-panel{
+    display:flex;
+    flex-direction:column;
+    background:#e9e6de;
+    overflow:hidden;
+}
+.panel-header{
+    height:50px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 18px;
+}
+.panel-title{
+    font-size:13px;
+    font-weight:600;
+}
+/* 滚动区 */
+.chart-scroll{
+    flex:1;
+    overflow:auto;
+    padding:24px;
+}
+/* 卡片：flex 布局让坐标轴与网格并排，正常文档流，不被裁切 */
+.chart-wrapper{
+    width:max-content;
+    margin:auto;
+    display:flex;
+    align-items:flex-start;
+    background:white;
+    border:1px solid #d0ccc3;
+    box-shadow:0 10px 30px rgba(0,0,0,.07);
+    padding:14px;
+}
+/* 左侧坐标轴：column 正序，row0 显示 N，底行显示 1 */
+.axis-left{
+    display:flex;
+    flex-direction:column;
+    margin-right:8px;
+}
+.axis-left-item{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    font-size:11px;
+    color:#555;
+    padding-right:5px;
+    margin-bottom:3px; /* 对齐 grid 的 gap */
+}
+.axis-left-item:last-child{
+    margin-bottom:0;
+}
+/* 右侧：网格 + 底部坐标轴 */
+.chart-col{
+    display:flex;
+    flex-direction:column;
+}
+.chart{
+    display:grid;
+    gap:3px;
+    background:#ece9e0;
+}
+.chart-cell{
+    width:var(--cell-size);
+    height:var(--cell-size);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    font-weight:700;
+    cursor:crosshair;
+    user-select:none;
+    border-radius:10px;
+}
+.axis-bottom{
+    display:flex;
+    margin-top:8px;
+}
+.axis-bottom-item{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    color:#555;
+    padding-top:4px;
+    margin-right:3px; /* 对齐 grid 的 gap */
+}
+.axis-bottom-item:last-child{
+    margin-right:0;
+}
+.preview{
+    border-left:1px solid var(--border);
+    background:#f7f5f0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+.preview-header{
+    height:50px;
+    padding:0 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.preview-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+#previewZoomLabel{min-width:44px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;}
+.preview-title-wrap{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.preview-title{
+    font-size:13px;
+    font-weight:600;
+}
+.preview-stage{
+    position:relative;
+    flex:1;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:transparent;
+}
+#fabricCanvas{
+    display:none;
+}
+.preview-controls{
+    padding:14px 18px;
+    border-top:1px solid var(--border);
+    background:#faf9f6;
+    display:none;
+}
+.preview-controls.show{
+    display:block;
+}
+.control-line{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-bottom:8px;
+}
+.control-line label{
+    width:90px;
+    margin:0;
+}
+.control-line input{
+    flex:1;
+}
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+}
+.modal.show{
+    display:flex;
+}
+.modal-box{
+    width:430px;
+    background:white;
+    border-radius:10px;
+    padding:24px;
+    box-shadow:0 25px 80px rgba(0,0,0,.3);
+}
+.modal-box h2{
+    margin:0 0 20px;
+}
+.modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:20px;
+}
+.toast{
+    position:fixed;
+    left:50%;
+    bottom:22px;
+    transform:translate(-50%,20px);
+    background:#222;
+    color:white;
+    padding:9px 15px;
+    border-radius:6px;
+    font-size:12px;
+    opacity:0;
+    transition:.25s;
+    pointer-events:none;
+    z-index:200;
+}
+.toast.show{
+    opacity:1;
+    transform:translate(-50%,0);
+}
+/* Responsive workspace: preserve the chart scale and scroll inside its panel. */
+:root{--header-height:64px;}
+header{height:var(--header-height);gap:12px;}
+.logo{min-width:0;overflow-wrap:anywhere;}
+.header-right{flex-shrink:0;flex-wrap:wrap;}
+.main{
+    height:auto;min-height:calc(100dvh - var(--header-height));
+    grid-template-columns:clamp(216px,18vw,245px) minmax(0,1fr);
+    grid-template-areas:"sidebar chart" "sidebar preview";
+    min-width:0;min-height:0;
+}
+.sidebar{grid-area:sidebar;min-width:0;min-height:0;}
+.chart-panel{grid-area:chart;min-width:0;min-height:0;}
+.preview{grid-area:preview;min-width:0;min-height:0;}
+.row>*,.chart-col,.color-row,.control-line input{min-width:0;}
+input:not([type="file"]){max-width:100%;}
+.panel-header,.preview-header{
+    height:auto;min-height:54px;flex:0 0 auto;padding:10px 14px;gap:8px;flex-wrap:wrap;
+}
+.panel-header>div:last-child{display:flex;gap:5px;flex-wrap:wrap;}
+.chart-scroll{min-width:0;min-height:0;padding:18px;overscroll-behavior:contain;}
+.preview-stage{
+    display:block;min-width:0;min-height:0;overflow:auto;
+    overscroll-behavior:contain;
+}
+.preview-content{
+    display:grid;place-items:center;width:max-content;height:max-content;
+    min-width:100%;min-height:100%;
+}
+.preview-controls{flex:0 0 auto;padding:12px 14px;}
+.control-line label{flex:0 0 90px;}
+.control-line input{width:0;}
+.control-line:last-child{margin-bottom:0;}
+.modal{padding:16px;overflow:auto;}
+.modal-box{width:min(430px,100%);max-height:calc(100dvh - 32px);overflow:auto;min-width:0;}
+.modal-actions{flex-wrap:wrap;}
+.toast{max-width:calc(100vw - 24px);text-align:center;overflow-wrap:anywhere;}
+button:focus-visible,input:focus-visible{outline:2px solid #6d806d;outline-offset:2px;}
+@media(min-width:768px){
+    html,body{height:auto;min-height:100%;overflow:auto;}
+    .main{
+        height:auto;min-height:calc(100dvh - var(--header-height));
+        grid-template-columns:clamp(216px,18vw,245px) minmax(0,1fr);
+        grid-template-areas:"sidebar chart" "sidebar preview";
+    }
+    .sidebar{align-self:start;position:sticky;top:0;max-height:100dvh;}
+    .chart-panel{height:clamp(420px,62dvh,640px);}
+    .preview{height:clamp(460px,68dvh,720px);border-left:0;border-top:1px solid var(--border);}
+}
+@media(min-width:1200px) and (min-height:760px){
+    html,body{height:100%;overflow:hidden;}
+    .main{
+        height:calc(100dvh - var(--header-height));min-height:0;
+        grid-template-rows:minmax(0,1fr) minmax(0,1.15fr);
+    }
+    .sidebar{position:static;align-self:stretch;max-height:none;}
+    .chart-panel,.preview{height:auto;}
+}
+@media(max-width:767px){
+    html,body{height:auto;min-height:100%;overflow:auto;}
+    header{height:auto;min-height:64px;padding:12px 16px;flex-wrap:wrap;}
+    .logo{font-size:16px;}
+    .logo span{font-size:12px;}
+    .main{height:auto;grid-template-columns:minmax(0,1fr);grid-template-areas:"sidebar" "chart" "preview";}
+    .sidebar{
+        display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;
+        padding:16px;overflow:visible;border-right:0;border-bottom:1px solid var(--border);
+    }
+    .sidebar .section{margin:0;min-width:0;}
+    .sidebar .section:last-child{grid-column:1/-1;}
+    .section-title{margin-bottom:8px;}
+    .colors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+    .colors>button{grid-column:1/-1;}
+    .color-row{grid-template-columns:24px minmax(0,1fr) 32px 32px;}
+    .color-preview{width:24px;height:32px;}
+    .small-button{width:32px;height:36px;min-height:36px;padding:0;}
+    button{min-height:40px;}
+    .tool-grid{gap:6px;}
+    .tool-grid button{padding:8px 6px;}
+    .chart-panel{height:clamp(380px,65dvh,600px);}
+    .chart-scroll{padding:12px;}
+    .chart-wrapper{padding:10px;}
+    .panel-header,.preview-header{padding:10px 12px;}
+    .panel-header>div:last-child{width:100%;}
+    .panel-header button{min-width:38px;padding:8px 10px;}
+    .preview{height:clamp(460px,75dvh,720px);border-left:0;border-top:1px solid var(--border);}
+    .preview-controls{padding:12px;}
+    .control-line{gap:8px;}
+    .control-line input{min-height:28px;}
+    .modal-box{padding:18px;}
+}
+@media(max-width:560px){
+    header{align-items:stretch;gap:10px;}
+    .logo{width:100%;}
+    .header-right{width:100%;}
+    .header-right button{flex:1;}
+}
+/* Integrated Add Yarn: exact colors, reusable palettes and image sampling. */
+.modal-box.yarn-modal{width:min(680px,100%);max-height:calc(100dvh - 32px);}
+.yarn-modal-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.yarn-modal-heading h2{margin:0;}
+.yarn-capacity{font-size:12px;color:#77736b;}
+.yarn-tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:18px;flex-wrap:wrap;}
+.yarn-tabs button[aria-selected="true"]{background:#252b24;border-color:#252b24;color:white;}
+.yarn-modal [hidden]{display:none!important;}
+.yarn-field{width:100%;min-width:0;border:1px solid var(--border);border-radius:6px;padding:10px;background:white;font:inherit;font-size:13px;}
+.yarn-quick-color{display:grid;grid-template-columns:84px minmax(0,1fr);gap:18px;align-items:start;}
+#addYarnColorModalPicker{width:84px;height:84px;padding:3px;}
+.yarn-help{font-size:12px;color:#77736b;line-height:1.6;margin:10px 0;}
+.yarn-favorite-action{margin-top:12px;}
+.yarn-library-filters{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:10px;}
+.yarn-library-grid{margin-top:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-height:280px;overflow:auto;}
+.yarn-library-item{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;min-width:0;}
+.yarn-choice{display:flex;align-items:center;gap:8px;padding:10px;flex:1;min-width:0;margin:0;color:var(--text);cursor:pointer;}
+.yarn-choice input{width:16px;height:16px;flex:0 0 16px;accent-color:#576f51;}
+.yarn-library-swatch{width:36px;height:40px;flex:0 0 36px;border-radius:5px;border:1px solid #0002;}
+.yarn-choice-text{min-width:0;display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere;}
+.yarn-choice-text strong{font-size:12px;font-weight:500;}
+.yarn-choice-text>span{font-size:10px;color:#77736b;}
+.yarn-star{padding:6px;border:0;background:transparent;flex:0 0 30px;min-width:0;}
+.yarn-message{color:#8b442f;font-size:12px;line-height:1.6;margin-top:12px;min-height:1px;overflow-wrap:anywhere;}
+.yarn-options{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;}
+.yarn-options label{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;}
+.yarn-options input{accent-color:#576f51;}
+.yarn-sample-tools{display:flex;align-items:end;gap:12px;margin-top:12px;}
+.yarn-sample-tools>div{flex:1;min-width:0;}
+.yarn-sample-preview{width:100%;max-height:140px;object-fit:contain;margin-top:12px;image-rendering:pixelated;background:repeating-conic-gradient(#ddd 0% 25%,#fff 0% 50%) 0/12px 12px;}
+.yarn-list-entry{min-width:0;}
+.yarn-caption{font-size:11px;color:#77736b;overflow-wrap:anywhere;margin:3px 2px 5px;}
+.color-row.is-selected{outline:2px solid #71836a;outline-offset:2px;border-radius:5px;}
+@media(max-width:560px){
+    .yarn-library-filters{grid-template-columns:minmax(0,1fr);}
+    .yarn-library-grid{grid-template-columns:minmax(0,1fr);max-height:250px;}
+    .yarn-tabs button{flex:1;padding:8px;}
+    .yarn-modal-heading{gap:6px;}
+    .yarn-options{flex-direction:column;gap:10px;}
+}
+
+.preview-title-wrap{flex-wrap:wrap;min-width:0;}
+.preview-mode-control{display:flex;align-items:center;gap:4px;}
+.preview-mode-control button{min-height:32px;padding:5px 10px;font-size:12px;}
+.preview-mode-control button[aria-pressed="true"]{background:#252b24;border-color:#252b24;color:#fff;}
+</style>
+</head>
+<body>
+<header>
+    <div class="logo">KnitFlower Pattern Studio <span>/ Colorwork</span></div>
+    <div class="header-right">
+        <button onclick="newPattern()">New</button>
+        <button onclick="openImage()">Add Pattern</button>
+        <button onclick="savePattern()">Save</button>
+    </div>
+</header>
+<div class="main">
+<aside class="sidebar">
+<div class="section">
+    <div class="section-title">Pattern</div>
+    <div class="pattern-name" id="patternNameDisplay">My Pattern</div>
+    <label>Name</label>
+    <input id="patternName" value="My Pattern" onchange="changeName()">
+</div>
+<div class="section">
+    <div class="section-title">Grid</div>
+    <div class="row">
+        <div>
+            <label>Stitches</label>
+            <input id="cols" type="number" min="1" max="200" value="12" onchange="resizeGrid()">
+        </div>
+        <div>
+            <label>Rows</label>
+            <input id="rows" type="number" min="1" max="200" value="10" onchange="resizeGrid()">
+        </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+        <div>
+            <label>Repeat X</label>
+            <input id="repeatX" type="number" min="1" max="10" value="1" onchange="renderFabric()">
+        </div>
+        <div>
+            <label>Repeat Y</label>
+            <input id="repeatY" type="number" min="1" max="10" value="1" onchange="renderFabric()">
+        </div>
+    </div>
+</div>
+<div class="section">
+    <div class="section-title">Gauge</div>
+    <div class="row">
+        <div>
+            <label>Stitch‑Width(px)</label>
+            <input id="stitchW" type="number" min="8" max="120" value="20" oninput="renderFabric()">
+        </div>
+        <div>
+            <label>Row‑Height(px)</label>
+            <input id="rowH" type="number" min="8" max="120" value="20" oninput="renderFabric()">
+        </div>
+    </div>
+</div>
+<div class="section">
+    <div class="section-title">Chart Tools</div>
+    <div class="tool-grid">
+        <button id="brush" class="tool active" onclick="setTool('brush')">Brush</button>
+        <button id="bucket" class="tool" onclick="setTool('bucket')">Bucket</button>
+        <button id="eraser" class="tool" onclick="setTool('eraser')">Eraser</button>
+        <button class="tool" onclick="clearGrid()">Clear</button>
+        <button id="undo" onclick="undoEdit()" disabled>Undo</button>
+    </div>
+</div>
+<div class="section">
+    <div class="section-title">Yarn</div>
+    <div id="colors" class="colors"></div>
+    <button class="full" style="margin-top:8px" onclick="openAddYarnModal()">+ Add Yarn</button>
+</div>
+</aside>
+<section class="chart-panel">
+<div class="panel-header">
+    <div class="panel-title">Chart</div>
+    <div>
+        <button onclick="flipH()">⇔</button>
+        <button onclick="flipV()">⇕</button>
+        <button onclick="rotateCW()">↻</button>
+        <button onclick="rotateCCW()">↺</button>
+        <button onclick="chartZoom(-1)">−</button>
+        <button onclick="chartZoom(1)">+</button>
+        <button onclick="saveChartPng()">PNG</button>
+        <button onclick="exportChartJson()">Export</button>
+    </div>
+</div>
+<div class="chart-scroll">
+    <div class="chart-wrapper">
+        <div class="axis-left" id="axisLeft"></div>
+        <div class="chart-col">
+            <div id="chart" class="chart"></div>
+            <div class="axis-bottom" id="axisBottom"></div>
+        </div>
+    </div>
+</div>
+</section>
+<section class="preview">
+<div class="preview-header">
+    <div class="preview-title-wrap">
+        <div class="preview-title">Preview</div>
+        <div class="preview-mode-control" role="group" aria-label="Preview mode">
+            <button type="button" data-preview-mode-button="original" aria-pressed="false" onclick="setPreviewMode('original')">Original</button>
+            <button type="button" data-preview-mode-button="latest" aria-pressed="true" onclick="setPreviewMode('latest')">Latest</button>
+        </div>
+        <button class="plain-btn" onclick="togglePreviewSetting()" aria-label="Preview settings">⚙</button>
+    </div>
+    <div class="preview-actions">
+        <button id="previewZoomOut" onclick="changePreviewZoom(-1)" aria-label="Zoom out preview">−</button>
+        <output id="previewZoomLabel" aria-live="polite">100%</output>
+        <button id="previewZoomIn" onclick="changePreviewZoom(1)" aria-label="Zoom in preview">+</button>
+        <button onclick="downloadBlurredPreviewPng()">PNG</button>
+    </div>
+</div>
+<div id="previewStage" class="preview-stage">
+    <canvas id="fabricCanvas"></canvas>
+    <div id="previewContent" class="preview-content"></div>
+</div>
+<div id="previewControls" class="preview-controls">
+    <div class="control-line">
+        <label>StitchStroke</label>
+        <input id="stitchStroke" type="range" min="0" max="2.5" step="0.1" value="1.5" oninput="renderFabric()">
+    </div>
+</div>
+</section>
+</div>
+
+<!-- Add Yarn弹窗 -->
+<div id="addYarnModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addYarnTitle" tabindex="-1">
+    <div class="modal-box yarn-modal">
+        <div class="yarn-modal-heading"><h2 id="addYarnTitle">Add Yarn</h2><span id="yarnCapacity" class="yarn-capacity"></span></div>
+        <div class="yarn-tabs" role="tablist" aria-label="Add yarn method">
+            <button id="yarnTab-quick" role="tab" aria-controls="yarnPanel-quick" onclick="setYarnTab('quick')">Quick Add</button>
+            <button id="yarnTab-library" role="tab" aria-controls="yarnPanel-library" onclick="setYarnTab('library')">Color Library</button>
+            <button id="yarnTab-image" role="tab" aria-controls="yarnPanel-image" onclick="setYarnTab('image')">Image Sampler</button>
+        </div>
+        <section id="yarnPanel-quick" role="tabpanel" aria-labelledby="yarnTab-quick">
+            <div class="yarn-quick-color">
+                <input type="color" id="addYarnColorModalPicker" value="#888888" aria-label="Choose yarn color" oninput="syncYarnPicker()">
+                <div><label for="addYarnHex">HEX color</label><input id="addYarnHex" class="yarn-field" value="#888888" maxlength="7" spellcheck="false" oninput="syncYarnHex()"><p id="yarnQuickHint" class="yarn-help" aria-live="polite"></p></div>
+            </div>
+            <label for="addYarnName">Name (optional)</label><input id="addYarnName" class="yarn-field" maxlength="60" placeholder="e.g. Warm cocoa" oninput="updateYarnDialog()">
+            <button id="yarnQuickFavorite" class="yarn-favorite-action" onclick="toggleQuickFavorite()">☆ Save to favorites</button>
+        </section>
+        <section id="yarnPanel-library" role="tabpanel" aria-labelledby="yarnTab-library" hidden>
+            <div class="yarn-library-filters"><input id="yarnLibrarySearch" class="yarn-field" type="search" aria-label="Search yarn colors" placeholder="Search name or HEX" oninput="renderYarnLibrary()"><select id="yarnLibrarySource" class="yarn-field" aria-label="Color collection" onchange="renderYarnLibrary()"><option value="presets">Presets</option><option value="favorites">Favorites</option><option value="recent">Recent</option><option value="all">All colors</option></select></div>
+            <p id="yarnLibrarySummary" class="yarn-help" aria-live="polite"></p><button id="yarnClearSelection" onclick="clearYarnLibrarySelection()" disabled>Clear Selection</button><div id="yarnLibraryGrid" class="yarn-library-grid"></div>
+        </section>
+        <section id="yarnPanel-image" role="tabpanel" aria-labelledby="yarnTab-image" hidden>
+            <p class="yarn-help">Extract colors from a reference image. Your chart stays unchanged.</p>
+            <label for="yarnSampleFile">Reference image</label><input id="yarnSampleFile" type="file" accept="image/*" onchange="loadYarnSample(this)">
+            <div class="yarn-sample-tools"><div><label for="yarnSampleLimit">Maximum candidate colors</label><input id="yarnSampleLimit" type="number" min="1" max="16" step="1" value="6" oninput="invalidateYarnSample()"></div><button id="yarnExtract" onclick="extractYarnSample()" disabled>Extract Colors</button></div>
+            <canvas id="yarnSamplePreview" class="yarn-sample-preview" aria-label="Reference color sample" hidden></canvas>
+            <p id="yarnImageSummary" class="yarn-help" aria-live="polite">Choose an image to begin. Transparent pixels are excluded.</p><div id="yarnImageGrid" class="yarn-library-grid"></div>
+        </section>
+        <div id="yarnMessage" class="yarn-message" role="status" aria-live="polite"></div>
+        <div class="yarn-options"><label><input id="yarnSelectAfterAdd" type="checkbox" checked> Select new yarn after adding</label><label><input id="yarnKeepOpen" type="checkbox"> Keep open to add more</label></div>
+        <div class="modal-actions"><button onclick="closeAddYarnModal()">Cancel</button><button id="confirmAddYarnButton" class="primary" onclick="confirmAddYarn()">Add Yarn</button></div>
+    </div>
+</div>
+
+<div id="imageModal" class="modal">
+    <div class="modal-box" style="max-height:90vh;overflow:auto">
+        <h2>Add Pattern</h2>
+        <label>Pattern name</label>
+        <input id="imageName" value="Imported Pattern" oninput="invalidateImportPreview()">
+        <div style="margin-top:12px">
+            <label>Maximum yarn colors (blank excluded)</label>
+            <input id="imageColorCount" type="number" min="1" max="16" step="1" value="4" oninput="invalidateImportPreview()">
+        </div>
+        <p style="color:#777;font-size:12px;line-height:1.6;">
+        Use up to the selected number of yarn colors. Transparent pixels remain blank. No dithering is applied.
+        </p>
+        <div class="row">
+            <div><label>Grid width (stitches)</label><input id="importCols" type="number" min="1" max="40" step="1" value="30" oninput="invalidateImportPreview()"></div>
+            <div><label>Grid height (rows)</label><input id="importRows" type="number" min="1" max="40" step="1" value="30" oninput="invalidateImportPreview()"></div>
+        </div>
+        <p id="importError" role="alert" style="color:#9c2929;font-size:12px"></p>
+        <div id="importPreview" hidden style="max-height:240px;overflow:auto;margin-top:12px">
+            <canvas id="importPreviewCanvas" style="width:100%;height:auto;max-height:160px;object-fit:contain;image-rendering:pixelated;background:repeating-conic-gradient(#ddd 0% 25%,#fff 0% 50%) 0/12px 12px"></canvas>
+            <p id="importSummary" aria-live="polite" style="font-size:12px"></p>
+            <div id="importYarnCounts" style="font-size:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeImage()">Cancel</button>
+            <button onclick="createFromImage()">Preview Conversion</button>
+            <button id="confirmImageImport" class="primary" onclick="confirmImageImport()" disabled>Import Pattern</button>
+        </div>
+    </div>
+</div>
+<input id="imageInput" type="file" accept="image/*" hidden>
+<div id="toast" class="toast"></div>
+<script>
+let blurCanvas = null;
+let state={
+    name:"My Pattern",
+    rows:10,
+    cols:12,
+    grid:[],
+    colors:[null,"#262626","#b45147","#476957"]
+};
+let activeColor=1;
+let currentTool="brush";
+let chartCellSize=28;
+let imageObject=null;
+// Fixed to the former controls' saved defaults; blank cells remain transparent.
+const PREVIEW_RENDER_SETTINGS=Object.freeze({texture:1,skew:.6,light:.5});
+const PREVIEW_ZOOM_SETTINGS=Object.freeze({min:.4,max:4,step:.2});
+// Source-faithful profiles share one rendering pipeline and one pattern state.
+const PREVIEW_MODE_PROFILES=Object.freeze({
+    original:Object.freeze({draw:drawOriginalKnitStitch,skewAxis:"width",reverseRows:false,
+        blurLimit:1.1,blurFactor:.045,softenAlpha:.32,
+        glow:"rgba(255,244,220,.04)",shade:"rgba(0,0,0,.18)"}),
+    latest:Object.freeze({draw:drawLatestKnitStitch,skewAxis:"height",reverseRows:true,
+        blurLimit:1.4,blurFactor:.055,softenAlpha:.46,
+        glow:"rgba(255,244,220,.025)",shade:"rgba(0,0,0,.06)"})
+});
+function readPreviewMode(){
+    try{return localStorage.getItem("knitflower-preview-mode-v1")==="original"?"original":"latest";}
+    catch{return "latest";}
+}
+let previewMode=readPreviewMode();
+syncPreviewModeButtons();
+function syncPreviewModeButtons(){
+    document.querySelectorAll('[data-preview-mode-button]').forEach(button=>{
+        button.setAttribute("aria-pressed",String(button.dataset.previewModeButton===previewMode));
+    });
+}
+function setPreviewMode(mode){
+    if(!Object.prototype.hasOwnProperty.call(PREVIEW_MODE_PROFILES,mode))return;
+    previewMode=mode;syncPreviewModeButtons();
+    try{localStorage.setItem("knitflower-preview-mode-v1",mode);}catch{}
+    renderFabric();
+}
+
+let previewZoomValue=1;
+let previewViewState=null;
+let previewResizeObserver=null;
+let pendingImagePattern=null;
+let yarnTab="quick";
+let yarnQuickDraftName="";
+let yarnBatchSelections={library:new Map(),image:new Map()};
+let yarnSampleCandidates=[],yarnSampleImage=null,yarnSampleSequence=0,yarnReturnFocus=null;
+const YARN_PRESETS=[
+    {hex:"#9b6b53",name:"Warm cocoa"},{hex:"#536d58",name:"Moss"},{hex:"#c79a51",name:"Honey"},
+    {hex:"#d58d9e",name:"Rose"},{hex:"#eadbd0",name:"Cream"},{hex:"#8b939a",name:"Slate"},
+    {hex:"#268da2",name:"Lake"},{hex:"#54392b",name:"Walnut"},{hex:"#b45147",name:"Brick"},
+    {hex:"#262626",name:"Charcoal"},{hex:"#c3b6d6",name:"Lilac"},{hex:"#ddd4ad",name:"Oat"}
+];
+let yarnLibrary=loadYarnLibrary();
+
+const undoHistory=[];
+let strokeRecorded=false;
+function updateUndoButton(){
+    document.getElementById("undo").disabled=undoHistory.length===0;
+}
+function recordEdit(){
+    const snapshot=JSON.stringify({state,activeColor});
+    if(undoHistory[undoHistory.length-1]!==snapshot){
+        undoHistory.push(snapshot);
+        if(undoHistory.length>50) undoHistory.shift();
+    }
+    updateUndoButton();
+}
+function undoEdit(){
+    if(!undoHistory.length) return;
+    const snapshot=JSON.parse(undoHistory.pop());
+    state=snapshot.state;activeColor=snapshot.activeColor;
+    window.mouseDown=false;strokeRecorded=false;
+    sanitizeActiveColor();updateDimensions();
+    document.getElementById("patternName").value=state.name;
+    document.getElementById("patternNameDisplay").textContent=state.name;
+    renderColors();renderChart();renderFabric();updateUndoButton();
+    showToast("Edit undone");
+}
+
+// 公共工具：修复activeColor越界
+function sanitizeActiveColor(){
+    if(activeColor <0 || activeColor >= state.colors.length){
+        activeColor = 0;
+    }
+}
+
+// ===== Add Yarn Modal逻辑 =====
+function normalizeYarnHex(value){
+    const match=String(value||"").trim().match(/^#?([0-9a-f]{6})$/i);
+    return match?"#"+match[1].toLowerCase():null;
+}
+function yarnName(index){return String(state.yarnNames?.[index]||"").trim()||"Yarn "+index;}
+function yarnIndex(hex){return state.colors.findIndex((value,i)=>i>0&&normalizeYarnHex(value)===hex);}
+function cleanYarnEntries(entries,limit){
+    const seen=new Set();return (Array.isArray(entries)?entries:[]).filter(item=>{
+        const hex=normalizeYarnHex(item?.hex);if(!hex||seen.has(hex))return false;seen.add(hex);return true;
+    }).slice(0,limit).map(item=>({hex:normalizeYarnHex(item.hex),name:String(item.name||"").trim().slice(0,60)}));
+}
+function loadYarnLibrary(){
+    try{
+        const saved=JSON.parse(localStorage.getItem("knitflower-yarn-library-v1")||"{}");
+        return {favorites:cleanYarnEntries(saved.favorites,64),recent:cleanYarnEntries(saved.recent,24),lastHex:normalizeYarnHex(saved.lastHex)};
+    }catch(error){return {favorites:[],recent:[],lastHex:null};}
+}
+function saveYarnLibrary(){
+    try{localStorage.setItem("knitflower-yarn-library-v1",JSON.stringify(yarnLibrary));return true;}
+    catch(error){document.getElementById("yarnMessage").textContent="Browser storage is unavailable. Colors are available for this session only.";return false;}
+}
+function openAddYarnModal(){
+    yarnReturnFocus=document.activeElement;yarnTab="quick";
+    yarnBatchSelections={library:new Map(),image:new Map()};yarnSampleCandidates=[];yarnSampleImage=null;yarnSampleSequence++;
+    document.getElementById("yarnSampleFile").value="";
+    document.getElementById("yarnSamplePreview").hidden=true;
+    document.getElementById("yarnImageGrid").replaceChildren();document.getElementById("yarnExtract").disabled=true;
+    document.getElementById("yarnImageSummary").textContent="Choose an image to begin. Transparent pixels are excluded.";
+    document.getElementById("addYarnName").value="";document.getElementById("addYarnName").disabled=false;yarnQuickDraftName="";
+    const hex=yarnLibrary.lastHex||normalizeYarnHex(state.colors[activeColor])||"#888888";
+    document.getElementById("addYarnHex").value=hex;document.getElementById("addYarnColorModalPicker").value=hex;
+    document.getElementById("yarnMessage").textContent="";
+    document.getElementById("addYarnModal").classList.add("show");setYarnTab("quick");
+    document.getElementById("addYarnHex").focus();
+}
+function closeAddYarnModal(){
+    document.getElementById("addYarnModal").classList.remove("show");yarnSampleSequence++;
+    if(yarnReturnFocus?.isConnected)yarnReturnFocus.focus();
+}
+function setYarnTab(tab){
+    if(!["quick","library","image"].includes(tab))return;
+    yarnTab=tab;document.getElementById("yarnMessage").textContent="";
+    for(const name of ["quick","library","image"]){
+        const button=document.getElementById("yarnTab-"+name);button.setAttribute("aria-selected",String(tab===name));button.tabIndex=tab===name?0:-1;
+        document.getElementById("yarnPanel-"+name).hidden=tab!==name;
+    }
+    if(tab==="library")renderYarnLibrary();
+    if(tab==="image")renderYarnImageCandidates();
+    updateYarnDialog();
+}
+function syncYarnPicker(){
+    document.getElementById("addYarnHex").value=document.getElementById("addYarnColorModalPicker").value;updateYarnDialog();
+}
+function syncYarnHex(){
+    const hex=normalizeYarnHex(document.getElementById("addYarnHex").value);
+    if(hex)document.getElementById("addYarnColorModalPicker").value=hex;updateYarnDialog();
+}
+function pendingYarns(){
+    if(yarnTab==="quick"){
+        const hex=normalizeYarnHex(document.getElementById("addYarnHex").value);
+        return hex?[{hex,name:document.getElementById("addYarnName").value.trim().slice(0,60)}]:[];
+    }
+    return [...yarnBatchSelections[yarnTab].values()].filter(item=>yarnIndex(item.hex)<0);
+}
+function updateYarnDialog(){
+    const count=state.colors.length-1,available=16-count;
+    document.getElementById("yarnCapacity").textContent=count+" / 16 yarns · "+available+" available";
+    const items=pendingYarns(),button=document.getElementById("confirmAddYarnButton");
+    if(yarnTab==="quick"){
+        const hex=items[0]?.hex,index=hex?yarnIndex(hex):-1;
+        const hint=document.getElementById("yarnQuickHint");
+        hint.textContent=!hex?"Enter a six-digit HEX color, such as #9B6B53.":index>0?"Already in your palette as "+yarnName(index)+" ("+index+").":available===0?"Your palette is full. Remove a yarn before adding a new color.":"New color · Blank does not count toward the limit.";
+        const nameField=document.getElementById("addYarnName");
+        if(index>0){
+            if(!nameField.disabled)yarnQuickDraftName=nameField.value;
+            nameField.value=String(state.yarnNames?.[index]||"");nameField.disabled=true;
+        }else{
+            if(nameField.disabled)nameField.value=yarnQuickDraftName;
+            nameField.disabled=false;yarnQuickDraftName=nameField.value;
+        }
+        button.textContent=index>0?"Use Yarn "+index:"Add Yarn";
+        button.disabled=!hex||(index<0&&available===0);
+        const favorite=!!hex&&yarnLibrary.favorites.some(item=>item.hex===hex);
+        const star=document.getElementById("yarnQuickFavorite");star.textContent=favorite?"★ Saved to favorites":"☆ Save to favorites";star.disabled=!hex;star.setAttribute("aria-pressed",String(favorite));
+    }else{
+        button.textContent=items.length?"Add "+items.length+" Yarn"+(items.length===1?"":"s"):"Select Colors";
+        button.disabled=!items.length||items.length>available;
+        if(items.length>available)document.getElementById("yarnMessage").textContent="Select at most "+available+" new colors. No colors have been added.";
+        else if(document.getElementById("yarnMessage").textContent.startsWith("Select at most"))document.getElementById("yarnMessage").textContent="";
+    }
+}
+function toggleYarnFavorite(hex,name){
+    const restoreFocus=document.activeElement?.classList.contains("yarn-star");
+    const index=yarnLibrary.favorites.findIndex(item=>item.hex===hex);
+    if(index>=0)yarnLibrary.favorites.splice(index,1);
+    else{
+        if(yarnLibrary.favorites.length>=64){document.getElementById("yarnMessage").textContent="You can save up to 64 favorites. Remove a favorite first.";return;}
+        yarnLibrary.favorites.unshift({hex,name});
+    }
+    saveYarnLibrary();
+    if(yarnTab==="library")renderYarnLibrary();if(yarnTab==="image")renderYarnImageCandidates();updateYarnDialog();
+    if(restoreFocus){
+        const grid=document.getElementById(yarnTab==="library"?"yarnLibraryGrid":"yarnImageGrid");
+        const button=[...grid.querySelectorAll(".yarn-star")].find(item=>item.dataset.color===hex);
+        (button||document.getElementById(yarnTab==="library"?"yarnLibrarySearch":"yarnTab-image")).focus();
+    }
+}
+function toggleQuickFavorite(){
+    const item=pendingYarns()[0];if(item){const index=yarnIndex(item.hex);toggleYarnFavorite(item.hex,index>0?String(state.yarnNames?.[index]||""):item.name);}
+}
+function yarnChoiceCard(item,mode){
+    const existing=yarnIndex(item.hex),selected=yarnBatchSelections[mode].has(item.hex);
+    const card=document.createElement("div");card.className="yarn-library-item";
+    const label=document.createElement("label");label.className="yarn-choice";
+    const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.checked=existing<0&&selected;checkbox.disabled=existing>0;
+    checkbox.setAttribute("aria-label","Select "+(item.name||item.hex));
+    checkbox.onchange=()=>{if(checkbox.checked)yarnBatchSelections[mode].set(item.hex,item);else yarnBatchSelections[mode].delete(item.hex);updateYarnDialog();if(mode==="library")updateYarnLibrarySummary();};
+    const swatch=document.createElement("span");swatch.className="yarn-library-swatch";swatch.style.background=item.hex;
+    const text=document.createElement("span");text.className="yarn-choice-text";
+    const title=document.createElement("strong");title.textContent=item.name||item.hex;
+    const detail=document.createElement("span");detail.textContent=item.hex+(existing>0?" · In palette ("+existing+")":"");text.append(title,detail);
+    label.append(checkbox,swatch,text);
+    const star=document.createElement("button");star.className="yarn-star";star.dataset.color=item.hex;const favorite=yarnLibrary.favorites.some(entry=>entry.hex===item.hex);star.textContent=favorite?"★":"☆";star.setAttribute("aria-label",(favorite?"Remove favorite ":"Save favorite ")+(item.name||item.hex));star.setAttribute("aria-pressed",String(favorite));star.onclick=()=>toggleYarnFavorite(item.hex,item.name);
+    card.append(label,star);return card;
+}
+function updateYarnLibrarySummary(){
+    const selected=[...yarnBatchSelections.library.values()];
+    document.getElementById("yarnLibrarySummary").textContent=selected.length?selected.length+" selected: "+selected.map(item=>item.name||item.hex).join(", ")+".":"Choose colors to add. Existing colors are not added again.";
+    document.getElementById("yarnClearSelection").disabled=selected.length===0;
+}
+function clearYarnLibrarySelection(){yarnBatchSelections.library.clear();renderYarnLibrary();}
+function renderYarnLibrary(){
+    const source=document.getElementById("yarnLibrarySource").value,search=document.getElementById("yarnLibrarySearch").value.trim().toLowerCase();
+    const collections={presets:YARN_PRESETS,favorites:yarnLibrary.favorites,recent:yarnLibrary.recent,all:cleanYarnEntries([...yarnLibrary.favorites,...yarnLibrary.recent,...YARN_PRESETS],100)};
+    const items=(collections[source]||[]).filter(item=>(item.name+" "+item.hex).toLowerCase().includes(search));
+    const grid=document.getElementById("yarnLibraryGrid");grid.replaceChildren();
+    for(const item of items)grid.appendChild(yarnChoiceCard(item,"library"));
+    if(!items.length){const empty=document.createElement("p");empty.className="yarn-help";empty.textContent=source==="favorites"&&!search?"Save a color with ☆ to create your favorites.":"No matching colors in this collection.";grid.append(empty);}
+    updateYarnLibrarySummary();updateYarnDialog();
+}
+function invalidateYarnSample(){
+    yarnBatchSelections.image.clear();yarnSampleCandidates=[];
+    document.getElementById("yarnImageGrid").replaceChildren();
+    document.getElementById("yarnImageSummary").textContent=yarnSampleImage?"Extract colors again to apply the new limit.":"Choose an image to begin. Transparent pixels are excluded.";
+    updateYarnDialog();
+}
+function loadYarnSample(input){
+    const file=input.files[0];if(!file)return;
+    const sequence=++yarnSampleSequence;yarnSampleImage=null;invalidateYarnSample();document.getElementById("yarnExtract").disabled=true;document.getElementById("yarnSamplePreview").hidden=true;
+    const reader=new FileReader();
+    const fail=()=>{if(sequence===yarnSampleSequence)document.getElementById("yarnImageSummary").textContent="Unable to read this image. Choose another image.";};
+    reader.onerror=fail;reader.onload=event=>{
+        const image=new Image();image.onerror=fail;image.onload=()=>{
+            if(sequence!==yarnSampleSequence)return;
+            yarnSampleImage=image;document.getElementById("yarnExtract").disabled=false;
+            document.getElementById("yarnImageSummary").textContent="Image ready. Extract and review colors before adding.";
+        };image.src=event.target.result;
+    };reader.readAsDataURL(file);
+}
+function extractYarnSample(){
+    invalidateYarnSample();if(!yarnSampleImage)return;
+    const raw=document.getElementById("yarnSampleLimit").value.trim(),limit=Number(raw);
+    if(!raw||!Number.isInteger(limit)||limit<1||limit>16){document.getElementById("yarnImageSummary").textContent="Maximum candidate colors must be a whole number from 1 to 16.";return;}
+    const scale=Math.min(1,64/Math.max(yarnSampleImage.width,yarnSampleImage.height));
+    const canvas=document.getElementById("yarnSamplePreview");canvas.width=Math.max(1,Math.round(yarnSampleImage.width*scale));canvas.height=Math.max(1,Math.round(yarnSampleImage.height*scale));
+    const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;ctx.drawImage(yarnSampleImage,0,0,canvas.width,canvas.height);canvas.hidden=false;
+    const result=quantizeImport(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height,limit);
+    yarnSampleCandidates=result.palette.map(hex=>({hex,name:""}));
+    for(const item of yarnSampleCandidates)if(yarnIndex(item.hex)<0)yarnBatchSelections.image.set(item.hex,item);
+    document.getElementById("yarnImageSummary").textContent=yarnSampleCandidates.length?yarnSampleCandidates.length+" candidate colors. Existing colors are marked; choose the new colors to add.":"No visible colors found. Transparent pixels do not create yarns.";
+    renderYarnImageCandidates();
+}
+function renderYarnImageCandidates(){
+    const grid=document.getElementById("yarnImageGrid");grid.replaceChildren();
+    for(const item of yarnSampleCandidates)grid.appendChild(yarnChoiceCard(item,"image"));updateYarnDialog();
+}
+function confirmAddYarn(){
+    const items=pendingYarns();if(!items.length)return;
+    if(yarnTab==="quick"){
+        const index=yarnIndex(items[0].hex);
+        if(index>0){activeColor=index;renderColors();showToast("Yarn "+index+" selected");if(!document.getElementById("yarnKeepOpen").checked)closeAddYarnModal();return;}
+    }
+    if(items.length>17-state.colors.length){document.getElementById("yarnMessage").textContent="Not enough yarn slots. No colors have been added.";updateYarnDialog();return;}
+    recordEdit();
+    const oldNames=state.yarnNames;
+    state.yarnNames=state.colors.map((_,i)=>i?String(oldNames?.[i]||"").slice(0,60):"");
+    for(const item of items){state.colors.push(item.hex);state.yarnNames.push(item.name);}
+    if(document.getElementById("yarnSelectAfterAdd").checked)activeColor=state.colors.length-1;
+    yarnLibrary.lastHex=items.at(-1).hex;
+    yarnLibrary.recent=cleanYarnEntries([...items.slice().reverse(),...yarnLibrary.recent],24);saveYarnLibrary();
+    if(yarnTab!=="quick")yarnBatchSelections[yarnTab].clear();
+    renderColors();renderChart();renderFabric();
+    showToast(items.length===1?"Yarn added":"Added "+items.length+" yarns");
+    if(document.getElementById("yarnKeepOpen").checked){
+        document.getElementById("addYarnName").value="";
+        if(yarnTab==="library")renderYarnLibrary();if(yarnTab==="image")renderYarnImageCandidates();updateYarnDialog();
+    }else closeAddYarnModal();
+}
+
+function togglePreviewSetting(){
+    const ctr=document.getElementById("previewControls");
+    ctr.classList.toggle("show");
+}
+function hexToRgbObj(hexStr){
+    const h=hexStr.replace("#","");
+    return {
+        r:parseInt(h.substring(0,2),16),
+        g:parseInt(h.substring(2,4),16),
+        b:parseInt(h.substring(4,6),16)
+    };
+}
+function getTextColorByBg(hex){
+    const {r,g,b}=hexToRgbObj(hex);
+    const luminance=(0.299*r+0.587*g+0.114*b);
+    return luminance>130?"#222222":"#ffffff";
+}
+window.exportChartJson=function(){
+    try{
+        showToast("Generating json...");
+        const gridColors=[];
+        const safeDefaultHex=state.colors[0];
+        for(let r=0;r<state.rows;r++){
+            const rowArr=[];
+            for(let c=0;c<state.cols;c++){
+                const idx=state.grid[r][c];
+                const hexColor=(idx>=0&&idx<state.colors.length)?state.colors[idx]:safeDefaultHex;
+                const rgb=hexColor?hexToRgbObj(hexColor):null;
+                rowArr.push(rgb?`rgb(${rgb.r},${rgb.g},${rgb.b})`:"rgba(0,0,0,0)");
+            }
+            gridColors.push(rowArr);
+        }
+        const cellWVal=parseInt(document.getElementById("stitchW").value||25);
+        const cellHVal=parseInt(document.getElementById("rowH").value||28);
+        const out={
+            type:"blueprint",
+            version:"1.1",
+            name:state.name,
+            rows:state.rows,
+            cols:state.cols,
+            cellWidth:cellWVal,
+            cellHeight:cellHVal,
+            gridColors:gridColors,
+            createdAt:Date.now()
+        };
+        const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"});
+        downloadBlob(blob,state.name.replace(/\s+/g,"_")+".json");
+        showToast("Export chart json ok");
+    }catch(err){
+        console.error(err);
+        showToast("Export error:"+err.message);
+    }
+};
+
+function removeColor(index){
+    if(!Number.isInteger(index)||index<=0||index>=state.colors.length) return;
+    // 删除的针目变为空白；后续编号同步迁移，保留它们原先的毛线颜色。
+    recordEdit();
+    state.grid=state.grid.map(row=>row.map(value=>
+        value===index?0:value>index?value-1:value));
+    state.colors.splice(index,1);
+    if(Array.isArray(state.yarnNames))state.yarnNames.splice(index,1);
+    if(activeColor===index) activeColor=0;
+    else if(activeColor>index) activeColor--;
+    sanitizeActiveColor();
+    renderColors();renderChart();renderFabric();
+    showToast("Yarn removed; its stitches are now blank");
+}
+function init(){
+    createGrid();
+    sanitizeActiveColor();
+    renderColors();
+    renderChart();
+    renderFabric();
+}
+init();
+function createGrid(){
+    state.grid=[];
+    for(let r=0;r<state.rows;r++){
+        let row=[];
+        for(let c=0;c<state.cols;c++){
+            row.push(0);
+        }
+        state.grid.push(row);
+    }
+}
+function resizeGrid(){
+    const rows=Math.max(1,Math.min(40,parseInt(document.getElementById("rows").value)));
+    const cols=Math.max(1,Math.min(40,parseInt(document.getElementById("cols").value)));
+    const newGrid=[];
+    for(let r=0;r<rows;r++){
+        const row=[];
+        for(let c=0;c<cols;c++){
+            row.push(state.grid[r]?.[c]??0);
+        }
+        newGrid.push(row);
+    }
+    recordEdit();
+    state.rows=rows;
+    state.cols=cols;
+    state.grid=newGrid;
+    renderChart();
+    renderFabric();
+}
+const GAP=3;
+function renderChart(){
+    const chart=document.getElementById("chart");
+    chart.innerHTML="";
+    chart.style.gridTemplateColumns=`repeat(${state.cols},${chartCellSize}px)`;
+    //左轴：row0顶部显示 N，底行显示 1
+    const axisLeft=document.getElementById("axisLeft");
+    axisLeft.innerHTML="";
+    for(let r=0;r<state.rows;r++){
+        const div=document.createElement("div");
+        div.className="axis-left-item";
+        div.textContent=String(state.rows-r);
+        div.style.height=chartCellSize+"px";
+        axisLeft.appendChild(div);
+    }
+    //底轴：col0显示 N，右侧显示 1
+    const axisBottom=document.getElementById("axisBottom");
+    axisBottom.innerHTML="";
+    for(let c=0;c<state.cols;c++){
+        const div=document.createElement("div");
+        div.className="axis-bottom-item";
+        div.textContent=String(state.cols-c);
+        div.style.width=chartCellSize+"px";
+        axisBottom.appendChild(div);
+    }
+    for(let r=0;r<state.rows;r++){
+        for(let c=0;c<state.cols;c++){
+            const cell=document.createElement("div");
+            cell.className="chart-cell";
+            cell.style.width=chartCellSize+"px";
+            cell.style.height=chartCellSize+"px";
+            const index=state.grid[r][c];
+            // =========修复：越界兜底颜色========
+            const bgColorHex=(index>=0 && index<state.colors.length) ? state.colors[index] : state.colors[0];
+            cell.style.background=bgColorHex||"#ece9e0";
+            if(index!==0 && index>=0 && index<state.colors.length){
+                cell.innerText=String(index);
+                cell.style.color=getTextColorByBg(bgColorHex);
+            }else{
+                cell.innerText="";
+            }
+            cell.onmousedown=e=>{e.preventDefault();window.mouseDown=true;strokeRecorded=false;paint(r,c);};
+            cell.onmouseenter=()=>{if(window.mouseDown)paint(r,c);};
+            chart.appendChild(cell);
+        }
+    }
+}
+document.addEventListener("mousedown",()=>{window.mouseDown=true;});
+document.addEventListener("mouseup",()=>{window.mouseDown=false;strokeRecorded=false;});
+window.addEventListener("blur",()=>{window.mouseDown=false;strokeRecorded=false;});
+function paint(r,c){
+    sanitizeActiveColor();
+    const next=currentTool==="eraser"?0:activeColor;
+    if(state.grid[r][c]===next) return;
+    if(!window.mouseDown||!strokeRecorded){recordEdit();strokeRecorded=!!window.mouseDown;}
+    if(currentTool==="brush"){
+        state.grid[r][c]=activeColor;
+    }else if(currentTool==="eraser"){
+        state.grid[r][c]=0;
+    }else if(currentTool==="bucket"){
+        floodFill(r,c,state.grid[r][c],activeColor);
+    }
+    renderChart();
+    renderFabric();
+}
+function floodFill(r,c,oldColor,newColor){
+    if(oldColor===newColor) return;
+    const queue=[[r,c]];
+    while(queue.length){
+        const [rr,cc]=queue.shift();
+        if(rr<0||rr>=state.rows||cc<0||cc>=state.cols) continue;
+        if(state.grid[rr][cc]!==oldColor) continue;
+        state.grid[rr][cc]=newColor;
+        queue.push([rr-1,cc],[rr+1,cc],[rr,cc-1],[rr,cc+1]);
+    }
+}
+function setTool(tool){
+    currentTool=tool;
+    document.querySelectorAll(".tool").forEach(x=>x.classList.remove("active"));
+    if(tool==="brush") document.getElementById("brush").classList.add("active");
+    if(tool==="bucket") document.getElementById("bucket").classList.add("active");
+    if(tool==="eraser") document.getElementById("eraser").classList.add("active");
+}
+function clearGrid(){
+    if(!confirm("Clear entire chart?")) return;
+    if(!state.grid.some(row=>row.some(index=>index!==0))) return;
+    recordEdit();
+    for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) state.grid[r][c]=0;
+    renderChart();
+    renderFabric();
+}
+function renderColors(){
+    const box=document.getElementById("colors");
+    box.innerHTML="";
+    state.colors.forEach((color,index)=>{
+        if(index===0){
+            const blank=document.createElement("button");
+            blank.textContent="0 · Blank";
+            blank.onclick=()=>selectColor(0);
+            box.appendChild(blank);
+            return;
+        }
+        const row=document.createElement("div");
+        row.className="color-row";
+        row.innerHTML=`
+            <div class="color-preview" style="background:${color}"></div>
+            <input value="${color}" onchange="changeColor(${index},this.value)">
+            <button class="small-button" onclick="selectColor(${index})">${index}</button>
+            <button class="small-button" onclick="removeColor(${index})">×</button>
+        `;
+        row.classList.toggle("is-selected",index===activeColor);
+        const select=row.querySelector("button");select.setAttribute("aria-label","Select "+yarnName(index));select.setAttribute("aria-pressed",String(index===activeColor));
+        const entry=document.createElement("div");entry.className="yarn-list-entry";
+        entry.appendChild(row);
+        if(state.yarnNames?.[index]){const caption=document.createElement("div");caption.className="yarn-caption";caption.textContent=yarnName(index);entry.appendChild(caption);}
+        box.appendChild(entry);
+    });
+}
+function selectColor(index){
+    //选中颜色增加边界保护
+    if(index>=0 && index<state.colors.length){
+        activeColor=index;renderColors();
+        showToast("Yarn "+(index)+" selected");
+    }else{
+        sanitizeActiveColor();
+    }
+}
+function changeColor(index,color){
+    if(index<=0||index>=state.colors.length||!/^#[0-9a-f]{6}$/i.test(color)) return;
+    recordEdit();
+    state.colors[index]=color;
+    renderColors();
+    renderChart();
+    renderFabric();
+}
+function flipH(){
+    recordEdit();
+    state.grid=state.grid.map(row=>row.slice().reverse());
+    renderChart();renderFabric();
+}
+function flipV(){
+    recordEdit();
+    state.grid.reverse();
+    renderChart();renderFabric();
+}
+function rotateCW(){
+    const result=[];
+    for(let c=0;c<state.cols;c++){
+        const row=[];
+        for(let r=state.rows-1;r>=0;r--){
+            row.push(state.grid[r][c]);
+        }
+        result.push(row);
+    }
+    recordEdit();
+    const oldRows=state.rows;
+    state.rows=state.cols;
+    state.cols=oldRows;
+    state.grid=result;
+    updateDimensions();renderChart();renderFabric();
+}
+function rotateCCW(){
+    const result=[];
+    for(let c=state.cols-1;c>=0;c--){
+        const row=[];
+        for(let r=0;r<state.rows;r++){
+            row.push(state.grid[r][c]);
+        }
+        result.push(row);
+    }
+    recordEdit();
+    const oldRows=state.rows;
+    state.rows=state.cols;
+    state.cols=oldRows;
+    state.grid=result;
+    updateDimensions();renderChart();renderFabric();
+}
+function updateDimensions(){
+    document.getElementById("rows").value=state.rows;
+    document.getElementById("cols").value=state.cols;
+}
+function chartZoom(delta){
+    chartCellSize+=delta*4;
+    chartCellSize=Math.max(16,Math.min(70,chartCellSize));
+    renderChart();
+}
+function hexRGB(hex){
+    return {
+        r:parseInt(hex.slice(1,3),16),
+        g:parseInt(hex.slice(3,5),16),
+        b:parseInt(hex.slice(5,7),16)
+    };
+}
+function shadeColor(color,amount){
+    const rgb=hexRGB(color);
+    return `rgb(${Math.max(0,Math.min(255,rgb.r+amount))},${Math.max(0,Math.min(255,rgb.g+amount))},${Math.max(0,Math.min(255,rgb.b+amount))})`;
+}
+function changePreviewZoom(direction){
+    previewZoomValue=Math.max(PREVIEW_ZOOM_SETTINGS.min,Math.min(PREVIEW_ZOOM_SETTINGS.max,
+        Math.round((previewZoomValue+direction*PREVIEW_ZOOM_SETTINGS.step)*100)/100));
+    updatePreviewZoom();
+}
+function updatePreviewZoom(){
+    const source=document.getElementById("fabricCanvas");
+    const display=document.getElementById("displayPreviewCanvas");
+    const zoom=previewZoomValue;
+    document.getElementById("previewZoomLabel").textContent=Math.round(zoom*100)+"%";
+    document.getElementById("previewZoomOut").disabled=zoom<=PREVIEW_ZOOM_SETTINGS.min;
+    document.getElementById("previewZoomIn").disabled=zoom>=PREVIEW_ZOOM_SETTINGS.max;
+    source.dataset.previewZoom=String(zoom);
+    if(!display) return;
+    const stage=document.getElementById("previewStage");
+    const width=parseFloat(source.style.width)*zoom,height=parseFloat(source.style.height)*zoom;
+    const reset=!previewViewState||previewViewState.patternKey!==source.dataset.patternKey;
+    let centerX=reset?.5:previewViewState.centerX;
+    let centerY=reset?.5:previewViewState.centerY;
+    if(!reset&&previewViewState.viewportWidth===stage.clientWidth&&previewViewState.viewportHeight===stage.clientHeight){
+        centerX=(stage.scrollLeft+stage.clientWidth/2)/Math.max(previewViewState.width,stage.clientWidth);
+        centerY=(stage.scrollTop+stage.clientHeight/2)/Math.max(previewViewState.height,stage.clientHeight);
+    }
+    // A normal-flow content wrapper makes both ends of enlarged patterns reachable.
+    display.style.width=width+"px";display.style.height=height+"px";
+    stage.scrollLeft=centerX*stage.scrollWidth-stage.clientWidth/2;
+    stage.scrollTop=centerY*stage.scrollHeight-stage.clientHeight/2;
+    previewViewState={width,height,viewportWidth:stage.clientWidth,viewportHeight:stage.clientHeight,
+        patternKey:source.dataset.patternKey,centerX:0,centerY:0};
+    rememberPreviewCenter();
+}
+function rememberPreviewCenter(){
+    if(!previewViewState) return;
+    const stage=document.getElementById("previewStage");
+    previewViewState.centerX=(stage.scrollLeft+stage.clientWidth/2)/stage.scrollWidth;
+    previewViewState.centerY=(stage.scrollTop+stage.clientHeight/2)/stage.scrollHeight;
+}
+function renderFabric(){
+    const profile=PREVIEW_MODE_PROFILES[previewMode];
+    const canvas=document.getElementById("fabricCanvas");
+    canvas.dataset.previewMode=previewMode;
+    const number=(id,fallback,min,max)=>Math.max(min,Math.min(max,parseFloat(document.getElementById(id).value)||fallback));
+    const zoom=previewZoomValue;
+    const stitchWidth=number("stitchW",20,8,120);
+    const rowHeight=number("rowH",20,8,120);
+    const nx=Math.round(number("repeatX",1,1,8)),ny=Math.round(number("repeatY",1,1,8));
+    const texture=PREVIEW_RENDER_SETTINGS.texture;
+    const light=PREVIEW_RENDER_SETTINGS.light;
+    const stroke=parseFloat(document.getElementById("stitchStroke").value)||0;
+    const dpr=window.devicePixelRatio||1;
+    const fullWidth=state.cols*nx*stitchWidth;
+    const fullHeight=state.rows*ny*rowHeight;
+    // Bound bitmap resources with one shared scale, never crop or stretch either axis.
+    const resolutionScale=Math.min(1,4096/(fullWidth*dpr),4096/(fullHeight*dpr),
+        Math.sqrt(8000000/(fullWidth*fullHeight*dpr*dpr)));
+    const w=stitchWidth*resolutionScale,h=rowHeight*resolutionScale;
+    const skew=(profile.skewAxis==="width"?w:h)*PREVIEW_RENDER_SETTINGS.skew;
+    const width=fullWidth*resolutionScale,height=fullHeight*resolutionScale;
+    canvas.width=Math.max(1,Math.round(width*dpr));canvas.height=Math.max(1,Math.round(height*dpr));
+    canvas.style.width=fullWidth+"px";canvas.style.height=fullHeight+"px";
+    canvas.dataset.previewZoom=String(zoom);
+    canvas.dataset.patternKey=[state.cols,state.rows,nx,ny,stitchWidth,rowHeight].join(":");
+    const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,width,height); // 针目后方保持透明，不铺底色
+    // 精灵缓存局限于当前渲染，复用同色针脚；高倍重复不产生逐针纤维开销。
+    const sprites=new Map();
+    const visibleCols=Math.min(state.cols*nx,Math.ceil(width/w)+1);
+    const visibleRows=Math.min(state.rows*ny,Math.ceil((height+skew)/h)+1);
+    const pad=Math.ceil(Math.max(w,h,skew)+stroke+2);
+    // Original and Latest retain their own loop-overlap order.
+    for(let rowIndex=0;rowIndex<=visibleRows;rowIndex++){
+        const r=profile.reverseRows?visibleRows-1-rowIndex:rowIndex-1;
+        for(let c=-1;c<visibleCols;c++){
+            const rr=(r+state.rows)%state.rows,cc=(c+state.cols)%state.cols;
+            const index=state.grid[rr]?.[cc];
+            if(!index||!state.colors[index]) continue;
+            const color=state.colors[index];
+            // Hash both coordinates: avoid the previous every-row / seven-column repeat.
+            const variant=Math.min(23,Math.floor(pseudoRandom((r+257)*1009+(c+257)*9176)*24));
+            const key=color+":"+variant;
+            let sprite=sprites.get(key);
+            if(!sprite){
+                sprite=document.createElement("canvas");
+                sprite.width=Math.ceil((w+pad*2)*dpr);sprite.height=Math.ceil((h+pad*2)*dpr);
+                const sctx=sprite.getContext("2d");sctx.scale(dpr,dpr);
+                profile.draw(sctx,pad,pad,w,h,color,texture,variant,variant+1,skew,stroke);
+                sprites.set(key,sprite);
+            }
+            const jitter=0; // 保持源代码的规则针脚定位
+            ctx.drawImage(sprite,c*w-pad+jitter,r*h-pad,sprite.width/dpr,sprite.height/dpr);
+        }
+    }
+    ctx.save();
+    ctx.globalCompositeOperation="source-atop"; // 纹理与光照只作用于现有针目，保留透明间隙
+    // 小范围纤维散射柔化色块交界；保留大部分原图，避免整体失焦。
+    const softened=document.createElement("canvas");
+    softened.width=canvas.width;softened.height=canvas.height;
+    const softCtx=softened.getContext("2d");
+    softCtx.filter=`blur(${Math.max(.45,Math.min(profile.blurLimit,Math.min(w,h)*profile.blurFactor))*dpr}px)`;
+    softCtx.drawImage(canvas,0,0);
+    ctx.save();ctx.globalAlpha=profile.softenAlpha;
+    ctx.drawImage(softened,0,0,width,height);ctx.restore();
+    drawFabricGrain(ctx,width,height,texture);
+    // 柔和环境光，不用黑色多边形描边模拟针脚。
+    const glow=ctx.createRadialGradient(width*.35,height*.25,0,width*.5,height*.5,Math.max(width,height));
+    glow.addColorStop(0,profile.glow);glow.addColorStop(1,profile.shade);
+    ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
+    ctx.fillStyle=light>=.5?`rgba(255,255,255,${(light-.5)*.18})`:`rgba(0,0,0,${(.5-light)*.8})`;
+    ctx.fillRect(0,0,width,height);
+    ctx.restore();
+    applyPreviewBlur();
+}
+
+function applyPreviewBlur(){
+    const sourceCanvas=document.getElementById("fabricCanvas");
+    const previewStage=document.getElementById("previewStage");
+    const blurRadius=0; // 原 Blur 滑块的最小值，预览与 PNG 导出保持一致
+    if(!blurCanvas){
+        blurCanvas=document.createElement('canvas');
+    }
+    blurCanvas.width=sourceCanvas.width;
+    blurCanvas.height=sourceCanvas.height;
+    const bctx=blurCanvas.getContext('2d');
+    bctx.clearRect(0,0,blurCanvas.width,blurCanvas.height);
+    if(blurRadius>0){
+        bctx.filter=`blur(${blurRadius*(window.devicePixelRatio||1)}px)`;
+    }else{
+        bctx.filter="none";
+    }
+    bctx.drawImage(sourceCanvas,0,0);
+    let displayCanvas=document.getElementById("displayPreviewCanvas");
+    if(!displayCanvas){
+        displayCanvas=document.createElement("canvas");
+        displayCanvas.id="displayPreviewCanvas";
+        displayCanvas.style.display="block";
+        displayCanvas.style.maxWidth="none";displayCanvas.style.maxHeight="none";
+        displayCanvas.style.cursor="default";
+        document.getElementById("previewContent").appendChild(displayCanvas);
+        previewStage.addEventListener("scroll",rememberPreviewCenter,{passive:true});
+        if(typeof ResizeObserver!=="undefined"){
+            previewResizeObserver=new ResizeObserver(()=>updatePreviewZoom());
+            previewResizeObserver.observe(previewStage);
+        }
+    }
+    displayCanvas.width=sourceCanvas.width;
+    displayCanvas.height=sourceCanvas.height;
+    updatePreviewZoom();
+    const dctx=displayCanvas.getContext('2d');
+    dctx.drawImage(blurCanvas,0,0);
+}
+function downloadBlurredPreviewPng(){
+    const displayCanvas=document.getElementById("displayPreviewCanvas");
+    if(!displayCanvas){
+        showToast("No preview canvas");
+        return;
+    }
+    displayCanvas.toBlob(blob=>{
+        downloadBlob(blob,state.name.replace(/\s+/g,"_")+"_preview_"+previewMode+".png");
+    });
+    showToast("Download preview png ok");
+}
+function createAnnotatedChartCanvas(){
+    const wrapper=document.querySelector(".chart-wrapper");
+    const bounds=wrapper.getBoundingClientRect();
+    const width=Math.ceil(bounds.width),height=Math.ceil(bounds.height);
+    if(!width||!height)throw new Error("Chart is not visible");
+    const canvas=document.createElement("canvas");
+    const factor=Math.min(Math.max(2,window.devicePixelRatio||1),4096/width,4096/height,
+        Math.sqrt(16000000/(width*height)));
+    canvas.width=Math.max(1,Math.floor(width*factor));
+    canvas.height=Math.max(1,Math.floor(height*factor));
+    const scale=Math.min(canvas.width/width,canvas.height/height);
+    const ctx=canvas.getContext("2d");ctx.scale(scale,scale);
+    const cardStyle=getComputedStyle(wrapper);
+    ctx.fillStyle=cardStyle.backgroundColor;ctx.fillRect(0,0,canvas.width/scale,canvas.height/scale);
+    const box=element=>{
+        const rect=element.getBoundingClientRect();
+        return {x:rect.left-bounds.left,y:rect.top-bounds.top,width:rect.width,height:rect.height};
+    };
+    const chart=document.getElementById("chart"),grid=box(chart);
+    ctx.fillStyle=getComputedStyle(chart).backgroundColor;
+    ctx.fillRect(grid.x,grid.y,grid.width,grid.height);
+    const text=(element,align="center")=>{
+        if(!element.textContent)return;
+        const rect=box(element),style=getComputedStyle(element);
+        const left=parseFloat(style.paddingLeft)||0,right=parseFloat(style.paddingRight)||0;
+        const top=parseFloat(style.paddingTop)||0,bottom=parseFloat(style.paddingBottom)||0;
+        ctx.font=`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        ctx.fillStyle=style.color;ctx.textAlign=align;ctx.textBaseline="middle";
+        const x=align==="right"?rect.x+rect.width-right:rect.x+left+(rect.width-left-right)/2;
+        ctx.fillText(element.textContent,x,rect.y+top+(rect.height-top-bottom)/2);
+    };
+    chart.querySelectorAll(".chart-cell").forEach(cell=>{
+        const rect=box(cell),style=getComputedStyle(cell);
+        const radius=Math.min(parseFloat(style.borderTopLeftRadius)||0,rect.width/2,rect.height/2);
+        ctx.beginPath();roundedRect(ctx,rect.x,rect.y,rect.width,rect.height,radius);
+        ctx.fillStyle=style.backgroundColor;ctx.fill();text(cell);
+    });
+    document.querySelectorAll(".axis-left-item").forEach(item=>text(item,"right"));
+    document.querySelectorAll(".axis-bottom-item").forEach(item=>text(item));
+    ctx.strokeStyle=cardStyle.borderTopColor;ctx.lineWidth=parseFloat(cardStyle.borderTopWidth)||1;
+    ctx.strokeRect(.5,.5,width-1,height-1);
+    return canvas;
+}
+function chartCanvasBlob(canvas){
+    return new Promise((resolve,reject)=>canvas.toBlob(blob=>{
+        if(blob)resolve(blob);else reject(new Error("Unable to encode chart PNG"));
+    },"image/png"));
+}
+async function saveChartPng(){
+    try{
+        // Capture both outputs before encoding, so they represent the same edit.
+        const name=state.name.replace(/\s+/g,"_");
+        const cellPx=16;
+        const tempC=document.createElement("canvas");
+        tempC.width=state.cols*cellPx;tempC.height=state.rows*cellPx;
+        const tctx=tempC.getContext("2d");
+        // Preserve the existing raw pattern export, including transparent blanks.
+        for(let r=0;r<state.rows;r++)for(let c=0;c<state.cols;c++){
+            const index=state.grid[r][c];
+            if(!index||!state.colors[index])continue;
+            tctx.fillStyle=state.colors[index];
+            tctx.fillRect(c*cellPx,r*cellPx,cellPx,cellPx);
+        }
+        const annotated=createAnnotatedChartCanvas();
+        const [patternBlob,annotatedBlob]=await Promise.all([
+            chartCanvasBlob(tempC),chartCanvasBlob(annotated)
+        ]);
+        downloadBlob(patternBlob,name+"_chart.png");
+        downloadBlob(annotatedBlob,name+"_chart_annotated.png");
+        showToast("Saved pattern and numbered chart PNGs");
+    }catch(error){
+        console.error(error);showToast("Unable to export chart PNGs");
+    }
+}
+
+function drawLatestKnitStitch(ctx,x,y,w,h,color,texture,row,col,skew,stitchStroke){
+    const seed=row*1009+col*37,rgb=hexRGB(color);
+    const lum=rgb.r*.2126+rgb.g*.7152+rgb.b*.0722;
+    const saturation=(Math.max(rgb.r,rgb.g,rgb.b)-Math.min(rgb.r,rgb.g,rgb.b))/Math.max(1,rgb.r,rgb.g,rgb.b);
+    const lift=Math.max(0,1-lum/95)*9;
+    const shade=(gain,extra=0,warm=0)=>`rgb(${[rgb.r,rgb.g,rgb.b].map((v,i)=>
+        Math.round(Math.max(0,Math.min(255,v*gain+extra+[30,18,-7][i]*warm)))).join(',')})`;
+    // Keep the wool body inside its column, with at most a tiny allowance for fuzz.
+    ctx.save();ctx.beginPath();
+    ctx.rect(x-w*.015,y-h*2,w*1.03,h*5);ctx.clip();
+    // Match the original's lateral ports: vertical cuts on the left/right cell
+    // boundaries, joined to the center by sloping V edges. The small rounding is
+    // confined to the center valley/tip, never a horizontal cap at the shoulders.
+    const vertices=[[0,-.6],[.5,0],[1,-.6],[1,.4],[.5,1.10],[0,.4]];
+    const mix=(a,b,t)=>[x+w*(a[0]+(b[0]-a[0])*t),y+h*(a[1]+(b[1]-a[1])*t)];
+    const corners=vertices.map((p,i)=>{
+        const amount=i===1||i===4?.05:0;
+        return {enter:mix(p,vertices[(i+5)%6],amount),point:[x+p[0]*w,y+p[1]*h],
+            leave:mix(p,vertices[(i+1)%6],amount)};
+    });
+    ctx.beginPath();ctx.moveTo(...corners[0].enter);
+    for(let i=0;i<corners.length;i++){
+        const corner=corners[i];
+        ctx.quadraticCurveTo(...corner.point,...corner.leave);
+        ctx.lineTo(...corners[(i+1)%corners.length].enter);
+    }
+    ctx.closePath();ctx.fillStyle=shade(.84,lift*.4);ctx.fill();ctx.clip();
+    for(const side of [-1,1]){
+        // Each leg owns its half of the join, so painter's order cannot make the
+        // right leg cross over the left. The shared return yarn stays underneath.
+        ctx.save();ctx.beginPath();
+        ctx.rect(side<0?x:x+w*.5,y-h*2,w*.5,h*5);ctx.clip();
+        // Rounded wool bundles turn inward at the foot of each V. All geometry is
+        // normalized so non-square gauge settings stretch the same loop naturally.
+        const bend=(pseudoRandom(seed+41)-.5)*.026;
+        // Start beyond the side boundary: the visible yarn is cut laterally
+        // like the original, so no upward-facing ribbon end remains in the cell.
+        const points=[[.5+side*.72,-.72],[.5+side*(.40+bend),-.40],
+            [.5+side*.23,.72],[.5,1.10]];
+        function sample(t){
+            const u=1-t,p=points;
+            const px=u*u*u*p[0][0]+3*u*u*t*p[1][0]+3*u*t*t*p[2][0]+t*t*t*p[3][0];
+            const py=u*u*u*p[0][1]+3*u*u*t*p[1][1]+3*u*t*t*p[2][1]+t*t*t*p[3][1];
+            const dx=3*u*u*(p[1][0]-p[0][0])+6*u*t*(p[2][0]-p[1][0])+3*t*t*(p[3][0]-p[2][0]);
+            const dy=3*u*u*(p[1][1]-p[0][1])+6*u*t*(p[2][1]-p[1][1])+3*t*t*(p[3][1]-p[2][1]);
+            const length=Math.hypot(dx,dy)||1;
+            // Both bundles taper into the same tip. A constant-width end leaves
+            // two separate lobes (a W), even when their drawing is symmetric.
+            const taper=Math.max(0,Math.min(1,(t-.68)/.32));
+            const envelope=1-taper*taper*(3-2*taper);
+            const baseRadius=.210*(.82+.18*Math.sin(Math.PI*t))*(1+.025*Math.sin(t*9+seed))*envelope;
+            const nx=-dy/length,ny=dx/length;
+            // The original-style silhouette owns the side port cut and bounds.
+            const radius=baseRadius;
+            return {x:x+px*w,y:y+py*h,nx,ny,r:radius};
+        }
+        function point(t,offset){const p=sample(t);return [p.x+p.nx*p.r*w*offset,p.y+p.ny*p.r*h*offset];}
+        function ribbon(a,b){
+            ctx.beginPath();
+            for(let i=0;i<=28;i++){const p=point(i/28,a);i?ctx.lineTo(...p):ctx.moveTo(...p);}
+            for(let i=28;i>=0;i--)ctx.lineTo(...point(i/28,b));
+            ctx.closePath();
+        }
+        ctx.save();ctx.shadowColor=`rgba(23,20,15,${.07+Math.min(2.5,stitchStroke)*.025})`;
+        ctx.shadowBlur=Math.min(w,h)*.035;ctx.shadowOffsetY=h*.018;
+        ribbon(-1,1);ctx.fillStyle=color;ctx.fill();ctx.restore();
+        ctx.save();ribbon(-1,1);ctx.clip();
+        function diffuse(u){return .72+.32*Math.pow(Math.max(0,1-u*u),.55);}
+        for(let strip=0;strip<32;strip++){
+            const a=-1+strip/16,b=a+1/16+.008,u=(a+b)/2;
+            ribbon(a,b);ctx.fillStyle=shade(diffuse(u),lift*Math.max(0,1-u*u));ctx.fill();
+        }
+        if(texture>0){
+            ctx.lineCap='round';
+            // Long matte fibers, without the rejected version's helical grooves.
+            // Their small color variation gives dyed wool a restrained heathered finish.
+            for(let f=0;f<145;f++){
+                const start=pseudoRandom(seed+f*67+side*19)*.98;
+                const length=.10+pseudoRandom(seed+f*23)*.46;
+                const offset=(pseudoRandom(seed+f*37)-.5)*1.94;
+                const bend=(pseudoRandom(seed+f*59)-.5)*.09;
+                const gain=(.70+pseudoRandom(seed+f*71)*.65)*diffuse(offset);
+                const warm=pseudoRandom(seed+f*97)>.78?saturation*(.4+pseudoRandom(seed+f*109)):0;
+                ctx.strokeStyle=shade(gain,lift*(.3+pseudoRandom(seed+f*17)),warm);
+                ctx.globalAlpha=texture*(.17+pseudoRandom(seed+f*13)*.30);
+                ctx.lineWidth=Math.max(.15,Math.min(w,h)*(.008+pseudoRandom(seed+f*31)*.012));
+                ctx.beginPath();
+                for(let j=0;j<=9;j++){
+                    const t=Math.min(1,start+length*j/9);
+                    const p=point(t,offset+bend*Math.sin(t*11+f));
+                    j?ctx.lineTo(...p):ctx.moveTo(...p);
+                }
+                ctx.stroke();
+            }
+        }
+        ctx.globalAlpha=1;
+        const pocket=ctx.createLinearGradient(0,y-h*.3,0,y+h*.22);
+        pocket.addColorStop(0,`rgba(19,17,13,${.08+Math.min(2.5,stitchStroke)*.055})`);
+        pocket.addColorStop(1,'rgba(19,17,13,0)');
+        // Shade the whole clipped yarn surface. The former rectangle began
+        // inside the visible upper port and created a horizontal color step.
+        ctx.fillStyle=pocket;ctx.fillRect(x-w*2,y-h*2,w*5,h*4);
+        ctx.restore();
+        if(texture>0){
+            ctx.save();ctx.lineCap='round';
+            for(let f=0;f<72;f++){
+                const t=pseudoRandom(seed+f*47+side*19),edge=f%2?1:-1;
+                const p=sample(t),root=point(t,edge*.98);
+                const length=.02+pseudoRandom(seed+f*61)*.055;
+                const lean=(pseudoRandom(seed+f*83)-.5)*length;
+                const tip=[root[0]+(p.nx*edge*length+p.ny*lean)*w,
+                    root[1]+(p.ny*edge*length-p.nx*lean)*h];
+                const fade=ctx.createLinearGradient(...root,...tip);
+                fade.addColorStop(0,shade(1.08,3));fade.addColorStop(1,'rgba(0,0,0,0)');
+                ctx.strokeStyle=fade;ctx.globalAlpha=texture*.30;
+                ctx.lineWidth=Math.max(.15,Math.min(w,h)*.008);
+                ctx.beginPath();ctx.moveTo(...root);
+                ctx.quadraticCurveTo(root[0]+p.nx*edge*length*w*.55,
+                    root[1]+p.ny*edge*length*h*.55,...tip);ctx.stroke();
+            }
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+    ctx.restore();
+    if(texture>0){
+        // Coherent, elongated heather mottling modulates the lit yarn, rather than
+        // painting independent white noise over it. Seed and physical scale are stable.
+        const image=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
+        const data=image.data,dpr=Math.abs(ctx.getTransform().a)||1;
+        const sx=Math.max(1,w*dpr*.028),sy=Math.max(1,h*dpr*.42);
+        const columns=Math.ceil(image.width/sx)+2,rows=Math.ceil(image.height/sy)+2;
+        const noise=new Float32Array(columns*rows);
+        for(let j=0;j<noise.length;j++)noise[j]=pseudoRandom(j*137+seed*19);
+        const smooth=t=>t*t*(3-2*t);
+        for(let py=0;py<image.height;py++){
+            const gy=py/sy,iy=Math.floor(gy),fy=smooth(gy-iy);
+            for(let px=0;px<image.width;px++){
+                const i=(py*image.width+px)*4;if(!data[i+3])continue;
+                const gx=px/sx,ix=Math.floor(gx),fx=smooth(gx-ix),base=iy*columns+ix;
+                const top=noise[base]*(1-fx)+noise[base+1]*fx;
+                const bottom=noise[base+columns]*(1-fx)+noise[base+columns+1]*fx;
+                const fleck=top*(1-fy)+bottom*fy;
+                const gain=1+(fleck-.5)*.32*texture;
+                const heather=Math.max(0,fleck-.56)*saturation*texture;
+                for(let channel=0;channel<3;channel++){
+                    data[i+channel]=Math.max(0,Math.min(255,data[i+channel]*gain+[38,20,-8][channel]*heather));
+                }
+            }
+        }
+        ctx.putImageData(image,0,0);
+    }
+}
+
+function drawOriginalKnitStitch(ctx,x,y,w,h,color,texture,row,col,skew,stitchStroke){
+    const cx=x+w*.5,cy=y+h*.5,hw=w/2,hh=h/2;
+    const seed=row*1009+col*37;
+    // Keep the original V anchors and skew; vary only the local yarn contour.
+    const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+    function contour(side){
+        const fullness=1+(pseudoRandom(seed+side*13+41)-.5)*.025;
+        const edge=hw*fullness;
+        const points=[[cx+side*.42,cy-hh],[cx+side*edge,cy-hh-skew],
+            [cx+side*edge,cy+hh-skew],[cx+side*.42,cy+hh]];
+        const center=[cx+side*edge*.5,y+h*.5-skew*.5];
+        const radius=.15+(pseudoRandom(seed+side*17+79)-.5)*.025;
+        const segments=[];
+        for(let i=0;i<4;i++){
+            const p=points[i],prev=points[(i+3)%4],next=points[(i+1)%4];
+            const enter=mix(p,prev,radius),leave=mix(p,next,radius);
+            segments.push([enter,p,leave]);
+            const end=mix(next,p,radius),mid=mix(leave,end,.5);
+            let nx=-(end[1]-leave[1]),ny=end[0]-leave[0];
+            const len=Math.hypot(nx,ny)||1;nx/=len;ny/=len;
+            if(nx*(mid[0]-center[0])+ny*(mid[1]-center[1])<0){nx=-nx;ny=-ny;}
+            const bulge=Math.min(w,h)*(i%2===0?.035:.016);
+            segments.push([leave,[mid[0]+nx*bulge,mid[1]+ny*bulge],end]);
+        }
+        return segments;
+    }
+    const contours={[-1]:contour(-1),[1]:contour(1)};
+    function shape(side){
+        const segments=contours[side];ctx.beginPath();ctx.moveTo(...segments[0][0]);
+        for(const [,control,end] of segments)ctx.quadraticCurveTo(...control,...end);
+        ctx.closePath();
+    }
+    ctx.save();
+    // A tucked, narrow yarn strand closes bright alpha pinholes without a fabric backing.
+    const bridge=Math.max(1.0,w*.05);
+    ctx.fillStyle=shadeColor(color,-25);
+    ctx.beginPath();ctx.moveTo(cx,y-h*.25);
+    ctx.quadraticCurveTo(cx+bridge,y-h*.05,cx+bridge,y+h*.48);
+    ctx.quadraticCurveTo(cx+bridge,y+h*.82,cx,y+h*1.10);
+    ctx.quadraticCurveTo(cx-bridge,y+h*.82,cx-bridge,y+h*.48);
+    ctx.quadraticCurveTo(cx-bridge,y-h*.05,cx,y-h*.25);ctx.fill();
+    for(const side of [-1,1]){
+        // StitchStroke 控制接触阴影强度；不再给整片 V 添加黑色轮廓。
+        ctx.save();
+        ctx.shadowColor=`rgba(0,0,0,${Math.min(.18,stitchStroke*.065)})`;
+        ctx.shadowBlur=Math.max(.6,Math.min(w,h)*.065);
+        ctx.shadowOffsetY=Math.min(h*.025,.65);
+        shape(side);ctx.fillStyle=color;ctx.fill();
+        ctx.restore();
+        ctx.save();shape(side);ctx.clip();
+        // 在斜片坐标内模拟圆柱纱股：宽受光面、窄暗面，左右股受光不对称。
+        ctx.save();ctx.transform(side,-skew/hw,0,1,cx,y);
+        const rgb=hexRGB(color);
+        const lum=(rgb.r+rgb.g+rgb.b)/3;
+        const strength=.66+Math.min(.28,stitchStroke*.10);
+        const slices=24,bands=24;
+        for(let iy=0;iy<bands;iy++)for(let ix=0;ix<slices;ix++){
+            const u=(ix+.5)/slices,v=(iy+.5)/bands;
+            const round=Math.pow(Math.sin(Math.PI*u),.62);
+            const bulge=Math.pow(Math.sin(Math.PI*v),.7);
+            const tension=(pseudoRandom(seed+109)-.5)*.018;
+            const diffuse=(round-.56)*.32+(bulge-.54)*.13+tension;
+            const directional=(side===-1 ? 1-u : u)*.035;
+            const gain=1+(diffuse+directional)*strength;
+            // 黑纱也保留微弱的漫反射，白纱仍能看出背光侧。
+            const lift=Math.max(0,1-lum/110)*round*bulge*14;
+            const channel=n=>Math.max(0,Math.min(255,n*gain+lift));
+            ctx.fillStyle=`rgb(${channel(rgb.r)},${channel(rgb.g)},${channel(rgb.b)})`;
+            ctx.fillRect(ix*hw/slices,iy*h/bands,hw/slices+.04,h/bands+.04);
+        }
+        // 暗部集中于穿套处，沿斜向衰减，避免整条 V 边框发黑。
+        const depth=Math.min(.42,stitchStroke*.19);
+        const pocket=ctx.createRadialGradient(hw*.14,h*.15,0,hw*.14,h*.15,h*.20);
+        pocket.addColorStop(0,`rgba(0,0,0,${depth})`);
+        pocket.addColorStop(.45,`rgba(0,0,0,${depth*.45})`);
+        pocket.addColorStop(1,"rgba(0,0,0,0)");
+        ctx.fillStyle=pocket;ctx.fillRect(0,0,hw,h*.48);
+        const overlap=ctx.createLinearGradient(0,h*.82,0,h);
+        overlap.addColorStop(0,"rgba(0,0,0,0)");
+        overlap.addColorStop(1,`rgba(0,0,0,${depth*.42})`);
+        ctx.fillStyle=overlap;ctx.fillRect(0,h*.82,hw,h*.18);
+        ctx.restore();
+        if(texture>0){
+            // 纹理沿原版斜片的方向分布，裁切在原轮廓内，不改变 V 形结构。
+            for(let f=0;f<180;f++){
+                const t=pseudoRandom(seed+f*23+side*11);
+                const v=pseudoRandom(seed+f*31);
+                const px=cx+side*(.5+t*(hw-.5));
+                const py=y+v*h-t*skew;
+                const len=.055+pseudoRandom(seed+f*13)*.13;
+                ctx.globalAlpha=texture*(.13+pseudoRandom(seed+f*7)*.23);
+                ctx.strokeStyle=shadeColor(color,f%3?25:-30);
+                ctx.lineWidth=Math.max(.24,w*.012);ctx.lineCap="round";
+                ctx.beginPath();ctx.moveTo(px,py);
+                ctx.quadraticCurveTo(px+side*w*len*.6,py-skew*len-h*.025,
+                    px+side*w*len,py-2*skew*len-h*.035);ctx.stroke();
+            }
+        }
+        ctx.restore();
+        if(texture>0){
+            // 沿圆角轮廓向空隙伸出短纤维，保留其间透明像素，不铺实色底。
+            ctx.save();ctx.lineCap="round";
+            const rgb=hexRGB(color),count=Math.round(36+texture*64);
+            const center=[cx+side*hw*.5,y+h*.5-skew*.5];
+            for(let f=0;f<count;f++){
+                // Sample exactly the same curves as the silhouette: no floating hair roots.
+                const [start,control,end]=contours[side][f%8];
+                const t=pseudoRandom(seed+f*47+side*19),u=1-t;
+                const px=u*u*start[0]+2*u*t*control[0]+t*t*end[0];
+                const py=u*u*start[1]+2*u*t*control[1]+t*t*end[1];
+                const dx=2*u*(control[0]-start[0])+2*t*(end[0]-control[0]);
+                const dy=2*u*(control[1]-start[1])+2*t*(end[1]-control[1]);
+                const norm=Math.hypot(dx,dy)||1;
+                let nx=-dy/norm,ny=dx/norm;
+                if(nx*(px-center[0])+ny*(py-center[1])<0){nx=-nx;ny=-ny;}
+                const length=Math.min(w,h)*(.018+pseudoRandom(seed+f*59)*.045);
+                const lean=(pseudoRandom(seed+f*71)-.5)*length*.9;
+                const endX=px+nx*length+dx/norm*lean;
+                const endY=py+ny*length+dy/norm*lean;
+                const fade=ctx.createLinearGradient(px,py,endX,endY);
+                const tint=18*pseudoRandom(seed+f*83)-5;
+                const channels=[rgb.r,rgb.g,rgb.b].map(v=>Math.max(0,Math.min(255,v+tint))).join(',');
+                fade.addColorStop(0,`rgba(${channels},${texture*.36})`);
+                fade.addColorStop(.55,`rgba(${channels},${texture*.20})`);
+                fade.addColorStop(1,`rgba(${channels},0)`);
+                ctx.strokeStyle=fade;ctx.lineWidth=Math.max(.24,w*(.009+pseudoRandom(seed+f*97)*.007));
+                ctx.beginPath();ctx.moveTo(px-nx*length*.15,py-ny*length*.15);
+                ctx.quadraticCurveTo(px+nx*length*.55-dx/norm*lean*.35,
+                    py+ny*length*.55-dy/norm*lean*.35,endX,endY);ctx.stroke();
+            }
+            ctx.restore();
+        }
+    }
+    ctx.beginPath();ctx.moveTo(cx,y+h*.20);ctx.lineTo(cx,y+h*.92);
+    ctx.strokeStyle="rgba(0,0,0,.015)";ctx.lineWidth=Math.max(.4,w*.015);ctx.stroke();
+    ctx.restore();
+    // 固定种子的微粒只作用于已绘制的纱线像素，保持背景透明及可重复渲染。
+    if(texture>0){
+        const image=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
+        const data=image.data,iw=image.width;
+        for(let i=0;i<data.length;i+=4){
+            if(!data[i+3])continue;
+            const px=(i/4)%iw,py=Math.floor(i/4/iw);
+            const fine=pseudoRandom(px*17+py*131+seed*7)-.5;
+            const clump=pseudoRandom(Math.floor(px/2)*71+Math.floor(py/3)*997+seed)-.5;
+            // Keep micrograin subordinate to directional fibers and rounded lighting.
+            const grain=(fine*11+clump*8)*texture;
+            for(let channel=0;channel<3;channel++)data[i+channel]=Math.max(0,Math.min(255,data[i+channel]+grain));
+        }
+        ctx.putImageData(image,0,0);
+    }
+}
+
+function drawKnitStitch(...args){
+    return PREVIEW_MODE_PROFILES[previewMode].draw(...args);
+}
+
+function drawFiber(ctx,x1,y1,x2,y2,color,width){
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.strokeStyle=color;
+    ctx.lineWidth=width;
+    ctx.lineCap="round";
+    ctx.stroke();
+}
+function drawFabricGrain(ctx,w,h,amount){
+    if(amount<=0) return;
+    ctx.save();
+    ctx.globalAlpha=.04*amount;
+    for(let i=0;i<Math.min(5000,w*h/15);i++){
+        const x=pseudoRandom(i*17)*w;
+        const y=pseudoRandom(i*91)*h;
+        const len=1+pseudoRandom(i*7)*3;
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+len,y);
+        ctx.strokeStyle=i%2?"#fff":"#000";
+        ctx.lineWidth=.5;
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+function pseudoRandom(x){
+    const v=Math.sin(x*12.9898)*43758.5453;
+    return v-Math.floor(v);
+}
+function roundedRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+}
+function openImage(){
+    const input=document.getElementById("imageInput");input.value="";input.click();
+}
+document.getElementById("imageInput").addEventListener("change",e=>{
+    const file=e.target.files[0];if(!file) return;
+    invalidateImportPreview();imageObject=null;
+    const reader=new FileReader();
+    const fail=()=>{showToast("Unable to read this image");};
+    reader.onerror=fail;
+    reader.onload=event=>{
+        const image=new Image();
+        image.onerror=fail;
+        image.onload=()=>{
+            imageObject=image;
+            const cols=Number(document.getElementById("importCols").value)||30;
+            document.getElementById("importRows").value=Math.max(1,Math.min(40,Math.round(cols*image.height/image.width)));
+            document.getElementById("imageModal").classList.add("show");
+        };
+        image.src=event.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+function invalidateImportPreview(){
+    pendingImagePattern=null;
+    document.getElementById("confirmImageImport").disabled=true;
+    document.getElementById("importPreview").hidden=true;
+    document.getElementById("importError").textContent="";
+}
+function closeImage(){
+    document.getElementById("imageModal").classList.remove("show");
+    invalidateImportPreview();
+}
+function importSettingsKey(){
+    return ["imageName","imageColorCount","importCols","importRows"].map(id=>document.getElementById(id).value).join("\n");
+}
+function readImportInteger(id,min,max,label){
+    const raw=document.getElementById(id).value.trim(),value=Number(raw);
+    if(!raw||!Number.isInteger(value)||value<min||value>max){
+        throw new Error(`${label} must be a whole number from ${min} to ${max}.`);
+    }
+    return value;
+}
+function createFromImage(){
+    invalidateImportPreview();
+    if(!imageObject){document.getElementById("importError").textContent="Select a valid image first.";return;}
+    try{
+        const limit=readImportInteger("imageColorCount",1,16,"Maximum yarn colors");
+        const cols=readImportInteger("importCols",1,40,"Grid width");
+        const rows=readImportInteger("importRows",1,40,"Grid height");
+        const canvas=document.createElement("canvas");canvas.width=cols;canvas.height=rows;
+        const ctx=canvas.getContext("2d");
+        // Nearest-neighbor avoids inventing antialiasing colors in pixel charts.
+        ctx.imageSmoothingEnabled=false;ctx.drawImage(imageObject,0,0,cols,rows);
+        const data=ctx.getImageData(0,0,cols,rows).data;
+        const converted=quantizeImport(data,cols,rows,limit);
+        const name=document.getElementById("imageName").value.trim()||"Imported Pattern";
+        pendingImagePattern={pattern:{name,rows,cols,grid:converted.grid,colors:[null,...converted.palette]},
+            settings:importSettingsKey(),image:imageObject};
+        const preview=document.getElementById("importPreviewCanvas");
+        preview.width=cols;preview.height=rows;
+        const pctx=preview.getContext("2d");
+        for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+            const index=converted.grid[r][c];if(!index)continue;
+            pctx.fillStyle=converted.palette[index-1];pctx.fillRect(c,r,1,1);
+        }
+        document.getElementById("importSummary").textContent=
+            `${cols} × ${rows} · ${converted.palette.length} of ${limit} yarn colors · ${converted.blank} blank stitches`;
+        const counts=document.getElementById("importYarnCounts");counts.replaceChildren();
+        converted.palette.forEach((color,i)=>{
+            const label=document.createElement("span");
+            const swatch=document.createElement("span");
+            swatch.style.cssText=`display:inline-block;width:12px;height:12px;border:1px solid #999;background:${color};margin-right:4px`;
+            label.append(swatch,document.createTextNode(`${i+1}: ${color} · ${converted.counts[i]} stitches`));counts.append(label);
+        });
+        document.getElementById("importPreview").hidden=false;
+        document.getElementById("confirmImageImport").disabled=false;
+    }catch(error){document.getElementById("importError").textContent=error.message;}
+}
+function confirmImageImport(){
+    if(!pendingImagePattern||pendingImagePattern.settings!==importSettingsKey()||pendingImagePattern.image!==imageObject){
+        invalidateImportPreview();document.getElementById("importError").textContent="Preview the conversion before importing.";return;
+    }
+    recordEdit();state=pendingImagePattern.pattern;
+    activeColor=state.colors.length>1?1:0;
+    document.getElementById("patternName").value=state.name;
+    document.getElementById("patternNameDisplay").textContent=state.name;
+    updateDimensions();renderColors();renderChart();renderFabric();closeImage();
+    showToast("Image imported as a knit chart");
+}
+function importOklab(rgb){
+    const linear=rgb.map(v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);});
+    const [r,g,b]=linear;
+    const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b);
+    const m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b);
+    const t=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+    return [.2104542553*l+.793617785*m-.0040720468*t,
+        1.9779984951*l-2.428592205*m+.4505937099*t,
+        .0259040371*l+.7827717662*m-.808675766*t];
+}
+function importDistance(a,b){return a.reduce((sum,v,i)=>sum+(v-b[i])**2,0);}
+function importNearest(lab,centers){
+    let best=0,distance=Infinity;
+    centers.forEach((center,i)=>{const d=importDistance(lab,center);if(d<distance){distance=d;best=i;}});
+    return best;
+}
+function quantizeImport(data,cols,rows,limit){
+    const histogram=new Map();
+    for(let i=0;i<data.length;i+=4){
+        if(data[i+3]<128)continue; // Same transparency threshold for extraction and mapping.
+        const rgb=[data[i],data[i+1],data[i+2]],hex=rgbToHex(rgb);
+        const entry=histogram.get(hex);
+        if(entry)entry.count++;
+        else histogram.set(hex,{rgb,hex,count:1,lab:importOklab(rgb)});
+    }
+    const entries=[...histogram.values()].sort((a,b)=>b.count-a.count||a.hex.localeCompare(b.hex));
+    let palette=entries;
+    if(entries.length>limit){
+        // Deterministic farthest-point seeding protects visually distinct small details.
+        const centers=[entries[0].lab.slice()];
+        while(centers.length<limit){
+            let candidate=null,score=-1;
+            for(const entry of entries){
+                const distance=Math.min(...centers.map(center=>importDistance(entry.lab,center)));
+                const value=distance*Math.pow(entry.count,.25);
+                if(value>score){score=value;candidate=entry;}
+            }
+            centers.push(candidate.lab.slice());
+        }
+        for(let iteration=0;iteration<40;iteration++){
+            const sums=centers.map(()=>[0,0,0,0]);
+            for(const entry of entries){
+                const sum=sums[importNearest(entry.lab,centers)];
+                for(let j=0;j<3;j++)sum[j]+=entry.lab[j]*entry.count;
+                sum[3]+=entry.count;
+            }
+            let movement=0;
+            centers.forEach((center,i)=>{
+                if(!sums[i][3])return;
+                const next=sums[i].slice(0,3).map(v=>v/sums[i][3]);
+                movement+=importDistance(center,next);centers[i]=next;
+            });
+            if(movement<1e-10)break;
+        }
+        // Represent each cluster with an actual sampled color, avoiding invented muddy yarns.
+        const representatives=new Map();
+        for(const entry of entries){
+            const index=importNearest(entry.lab,centers),distance=importDistance(entry.lab,centers[index]);
+            const previous=representatives.get(index);
+            if(!previous||distance<previous.distance)representatives.set(index,{entry,distance});
+        }
+        palette=[...new Map([...representatives.values()].map(({entry})=>[entry.hex,entry])).values()];
+    }
+    const assignments=new Map(entries.map(entry=>[entry.hex,importNearest(entry.lab,palette.map(p=>p.lab))]));
+    const counts=palette.map(()=>0),raw=[];let blank=0;
+    for(let r=0;r<rows;r++){
+        const row=[];
+        for(let c=0;c<cols;c++){
+            const i=(r*cols+c)*4;
+            if(data[i+3]<128){row.push(-1);blank++;continue;}
+            const index=assignments.get(rgbToHex([data[i],data[i+1],data[i+2]]));
+            row.push(index);counts[index]++;
+        }
+        raw.push(row);
+    }
+    // Remove unused slots and order by stitch count for a stable, inspectable palette.
+    const used=palette.map((entry,i)=>({entry,i,count:counts[i]})).filter(item=>item.count>0)
+        .sort((a,b)=>b.count-a.count||a.entry.hex.localeCompare(b.entry.hex));
+    const remap=new Map(used.map((item,i)=>[item.i,i+1]));
+    return {palette:used.map(item=>item.entry.hex),counts:used.map(item=>item.count),blank,
+        grid:raw.map(row=>row.map(index=>index<0?0:remap.get(index)))};
+}
+function rgbToHex(rgb){return "#"+rgb.map(x=>Math.round(x).toString(16).padStart(2,"0")).join("");}
+function changeName(){
+    const name=document.getElementById("patternName").value||"Untitled";
+    if(name===state.name) return;
+    recordEdit();
+    state.name=document.getElementById("patternName").value||"Untitled";
+    document.getElementById("patternNameDisplay").textContent=state.name;
+}
+function newPattern(){
+    recordEdit();
+    state={
+        name:"New Pattern",
+        rows:20,
+        cols:20,
+        grid:[],
+        colors:[null,"#252525"]
+    };
+    createGrid();
+    sanitizeActiveColor();
+    document.getElementById("patternName").value=state.name;
+    document.getElementById("patternNameDisplay").textContent=state.name;
+    updateDimensions();renderColors();renderChart();renderFabric();
+}
+function savePattern(){
+    localStorage.setItem("colorwork-pattern",JSON.stringify(state));
+    showToast("Pattern saved locally");
+}
+function loadPattern(){
+    const data=localStorage.getItem("colorwork-pattern");
+    if(!data) return;
+    try{
+        state=JSON.parse(data);
+        undoHistory.length=0;strokeRecorded=false;updateUndoButton();
+        // 兼容旧存档：0 按新约定为空白，其余颜色及编号原样保留。
+        state.colors[0]=null;
+        if(Array.isArray(state.yarnNames))state.yarnNames=state.colors.map((_,i)=>i?String(state.yarnNames[i]||"").slice(0,60):"");
+        state.grid=state.grid.map(row=>row.map(index=>
+            Number.isInteger(index)&&index>0&&state.colors[index]?index:0));
+        sanitizeActiveColor();
+        document.getElementById("patternName").value=state.name;
+        document.getElementById("patternNameDisplay").textContent=state.name;
+        updateDimensions();renderColors();renderChart();renderFabric();
+    }catch(e){console.error(e);}
+}
+loadPattern();
+function downloadBlob(blob,filename){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();a.remove();
+    URL.revokeObjectURL(url);
+}
+function showToast(message){
+    const toast=document.getElementById("toast");
+    toast.textContent=message;
+    toast.classList.add("show");
+    setTimeout(()=>{toast.classList.remove("show");},1800);
+}
+window.addEventListener("resize",()=>{renderFabric();});
+
+document.getElementById("addYarnModal").addEventListener("keydown",event=>{
+    if(event.key==="Escape"){event.preventDefault();closeAddYarnModal();return;}
+    if(event.target.closest(".yarn-tabs")&&["ArrowLeft","ArrowRight","Home","End"].includes(event.key)){
+        const tabs=["quick","library","image"];let index=tabs.indexOf(yarnTab);
+        index=event.key==="Home"?0:event.key==="End"?2:(index+(event.key==="ArrowRight"?1:2))%3;
+        event.preventDefault();setYarnTab(tabs[index]);document.getElementById("yarnTab-"+tabs[index]).focus();return;
+    }
+    if(event.key==="Enter"&&event.target.matches("#addYarnHex,#addYarnName")){
+        event.preventDefault();if(!document.getElementById("confirmAddYarnButton").disabled)confirmAddYarn();return;
+    }
+    if(event.key==="Tab"){
+        const items=[...document.querySelectorAll('#addYarnModal button:not(:disabled),#addYarnModal input:not(:disabled),#addYarnModal select:not(:disabled)')].filter(item=>item.offsetParent!==null&&item.tabIndex>=0);
+        const first=items[0],last=items.at(-1);
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+    }
+});
+
+</script>
+</body>
+</html>
